@@ -770,16 +770,15 @@
           populateOutletDropdowns();
           
           if (currentUser.role === 'FINANCE' || currentUser.role === 'SUPER_ADMIN') {
-            applyFiltersFinance(); // uses globalRequestsData + UI filters
+            applyFiltersFinance(); 
           }
           if (currentUser.role === 'HR' || currentUser.role === 'SUPER_ADMIN' || currentUser.role === 'DEPT_HEAD') {
-            applyFilters(); // uses globalRequestsData + UI filters
+            applyFilters(); 
           }
           if (currentUser.role === 'HR' || currentUser.role === 'SUPER_ADMIN') {
-            applyFiltersInventory(); // uses globalInventoryData + UI filters
+            applyFiltersInventory(); 
           }
           
-          // Initial chart renders
           if(document.getElementById('hrPieChart')) updateHRChart();
           if(document.getElementById('invMovementChart')) updateInvChart();
           if(document.getElementById('finBarChart')) updateFinChart();
@@ -994,7 +993,6 @@
       const dateFrom = document.getElementById('chartDateFromInv').value;
       const dateTo = document.getElementById('chartDateToInv').value;
 
-      // Calculate delivered quantities based on filtered requests
       const deliveredTally = {};
       globalRequestsData.forEach(req => {
         if (req.Status !== 'DELIVERED') return;
@@ -1009,7 +1007,6 @@
         }
       });
 
-      // Format for chart
       const chartData = Object.keys(deliveredTally).map(key => ({
         UNIFORM: key,
         TOTAL_DELIVERED: deliveredTally[key]
@@ -1245,7 +1242,7 @@
         if (item.AVAILABLE_STOCK > item.BASE_STOCK && item.BASE_STOCK > 0) {
           statusBadge = `<span class="bg-white border border-black text-black px-3 py-1 rounded-sm text-[10px] font-bold uppercase tracking-widest">OVERSTOCK</span>`;
         } else if (item.AVAILABLE_STOCK <= 5) {
-          statusBadge = `<span class="bg-red text-white px-3 py-1 rounded-sm text-[10px] font-bold uppercase tracking-widest animate-pulse">LOW STOCK</span>`;
+          statusBadge = `<span class="bg-black text-white px-3 py-1 rounded-sm text-[10px] font-bold uppercase tracking-widest animate-pulse">LOW STOCK</span>`;
           rowClass = "border-b border-gray-200 bg-gray-100";
         }
         
