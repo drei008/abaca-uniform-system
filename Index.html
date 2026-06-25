@@ -352,6 +352,18 @@
     let finBarChartObj = null;
     let invMovementChartObj = null;
 
+    // Safe fetch helper to prevent JSON parsing crashes on missing/restricted sheets
+    async function safeFetch(sheetName) {
+      try {
+        const res = await fetch(`${STEIN_API_BASE}/${sheetName}`);
+        const data = await res.json();
+        return Array.isArray(data) ? data : [];
+      } catch (e) {
+        console.warn(`Failed to load sheet: ${sheetName}`, e);
+        return [];
+      }
+    }
+
     // --- AUTHENTICATION ---
     async function attemptLogin() {
       const empId = document.getElementById('empIdInput').value.trim();
@@ -364,18 +376,22 @@
       document.getElementById('errorMessage').classList.add('hidden');
 
       try {
-        // Fetch users from all roles to find a match
+        // Fetch users from all roles using safeFetch
         const [superAdmins, hrAccess, finAccess, deptHeads, employees, uniforms] = await Promise.all([
-          fetch(`${STEIN_API_BASE}/SUPER%20ADMIN%20ACCESS`).then(r => r.json()),
-          fetch(`${STEIN_API_BASE}/HR%20ACCESS`).then(r => r.json()),
-          fetch(`${STEIN_API_BASE}/FINANCE%20ACCESS`).then(r => r.json()),
-          fetch(`${STEIN_API_BASE}/DEPARTMENT%20OPs%20HEAD`).then(r => r.json()),
-          fetch(`${STEIN_API_BASE}/EMPLOYEE%20LIST`).then(r => r.json()),
-          fetch(`${STEIN_API_BASE}/UNIFORM%20LIST`).then(r => r.json())
+          safeFetch('SUPER%20ADMIN%20ACCESS'),
+          safeFetch('HR%20ACCESS'),
+          safeFetch('FINANCE%20ACCESS'),
+          safeFetch('DEPARTMENT%20OPs%20HEAD'),
+          safeFetch('EMPLOYEE%20LIST'),
+          safeFetch('UNIFORM%20LIST')
         ]);
 
+        if (!employees.length && !superAdmins.length) {
+          throw new Error("Google Sheet is inaccessible. Ensure Share settings are 'Anyone with the link can view'.");
+        }
+
         globalUniformsList = uniforms.map(u => u.UNIFORM).filter(n => n);
-        globalInventoryRaw = uniforms; 
+        globalInventoryRaw = uniforms;
 
         let userRecord = null;
         let role = "";
@@ -419,7 +435,8 @@
            document.getElementById('loginBtn').disabled = false;
         }
       } catch (error) {
-        showError("Network Error: Could not connect to database.");
+        console.error("Login Error:", error);
+        showError("Error: " + error.message);
         document.getElementById('loginBtn').innerText = "LOG IN";
         document.getElementById('loginBtn').disabled = false;
       }
@@ -713,11 +730,11 @@
     async function fetchDashboardData() {
       try {
         const [requests, employees, lineItems, financeTags, uniforms] = await Promise.all([
-          fetch(`${STEIN_API_BASE}/Requests`).then(r => r.json()),
-          fetch(`${STEIN_API_BASE}/EMPLOYEE%20LIST`).then(r => r.json()),
-          fetch(`${STEIN_API_BASE}/LineItems`).then(r => r.json()),
-          fetch(`${STEIN_API_BASE}/FinanceTags`).then(r => r.json()),
-          fetch(`${STEIN_API_BASE}/UNIFORM%20LIST`).then(r => r.json())
+          safeFetch('Requests'),
+          safeFetch('EMPLOYEE%20LIST'),
+          safeFetch('LineItems'),
+          safeFetch('FinanceTags'),
+          safeFetch('UNIFORM%20LIST')
         ]);
 
         globalLineItems = lineItems;
