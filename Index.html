@@ -903,17 +903,23 @@
       if ((currentUser.role === 'FINANCE' || currentUser.role === 'SUPER_ADMIN') && document.getElementById('finBarChart')) {
         const ctxBar = document.getElementById('finBarChart').getContext('2d');
         const outletTotals = {};
+        const outletLabels = {};
         
         globalRequestsData.forEach(r => {
-          if(r.CostCategory === 'COMPANY_EXPENSE_PNL') {
-            const out = r.Outlet || 'Unknown';
-            if(!outletTotals[out]) outletTotals[out] = 0;
-            outletTotals[out] += Number(r.TotalCost) || 0;
+          if (r.CostCategory === 'COMPANY_EXPENSE_PNL') {
+            const rawOutlet = String(r.Outlet || 'Unknown').trim();
+            const outletKey = rawOutlet.toLowerCase();
+            const displayOutlet = rawOutlet || 'Unknown';
+
+            if (!outletTotals[outletKey]) outletTotals[outletKey] = 0;
+            if (!outletLabels[outletKey]) outletLabels[outletKey] = displayOutlet;
+
+            outletTotals[outletKey] += Number(r.TotalCost) || 0;
           }
         });
         
-        const labels = Object.keys(outletTotals);
-        const data = Object.values(outletTotals);
+        const labels = Object.keys(outletTotals).map(key => outletLabels[key]);
+        const data = Object.keys(outletTotals).map(key => outletTotals[key]);
         
         if(finBarChartObj) finBarChartObj.destroy();
         finBarChartObj = new Chart(ctxBar, {
