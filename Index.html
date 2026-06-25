@@ -40,12 +40,12 @@
       <button onclick="logout()" class="bg-white hover:bg-gray-100 border border-gray-300 text-black px-6 py-2 rounded-sm font-bold transition text-sm uppercase tracking-wider">Log Out</button>
     </div>
 
-    <div id="tabNavigation" class="flex space-x-4 border-b border-gray-300 mb-8 px-2 hidden">
-      <button id="btnTab-request" onclick="switchTab('request')" class="py-2 px-4 text-black border-b-2 border-black font-bold focus:outline-none transition uppercase text-sm tracking-wider">Submit Request</button>
-      <button id="btnTab-history" onclick="switchTab('history')" class="hidden py-2 px-4 text-gray-400 hover:text-black font-bold focus:outline-none transition uppercase text-sm tracking-wider">My Requests</button>
-      <button id="btnTab-database" onclick="switchTab('database')" class="hidden py-2 px-4 text-gray-400 hover:text-black font-bold focus:outline-none transition uppercase text-sm tracking-wider">Master Database</button>
-      <button id="btnTab-inventory" onclick="switchTab('inventory')" class="hidden py-2 px-4 text-gray-400 hover:text-black font-bold focus:outline-none transition uppercase text-sm tracking-wider">Live Inventory</button>
-      <button id="btnTab-finance" onclick="switchTab('finance')" class="hidden py-2 px-4 text-gray-400 hover:text-black font-bold focus:outline-none transition uppercase text-sm tracking-wider">Finance Ledger</button>
+    <div id="tabNavigation" class="flex flex-wrap space-x-2 md:space-x-4 border-b border-gray-300 mb-8 px-2 hidden">
+      <button id="btnTab-request" onclick="switchTab('request')" class="py-2 px-3 text-black border-b-2 border-black font-bold focus:outline-none transition uppercase text-xs md:text-sm tracking-wider">Submit Request</button>
+      <button id="btnTab-history" onclick="switchTab('history')" class="hidden py-2 px-3 text-gray-400 hover:text-black font-bold focus:outline-none transition uppercase text-xs md:text-sm tracking-wider">My Requests</button>
+      <button id="btnTab-database" onclick="switchTab('database')" class="hidden py-2 px-3 text-gray-400 hover:text-black font-bold focus:outline-none transition uppercase text-xs md:text-sm tracking-wider">Master Database</button>
+      <button id="btnTab-inventory" onclick="switchTab('inventory')" class="hidden py-2 px-3 text-gray-400 hover:text-black font-bold focus:outline-none transition uppercase text-xs md:text-sm tracking-wider">Live Inventory</button>
+      <button id="btnTab-finance" onclick="switchTab('finance')" class="hidden py-2 px-3 text-gray-400 hover:text-black font-bold focus:outline-none transition uppercase text-xs md:text-sm tracking-wider">Finance Ledger</button>
     </div>
 
     <div id="section-request" class="bg-white rounded-sm shadow-sm p-8 border border-gray-200 hidden">
@@ -110,7 +110,7 @@
         </label>
       </div>
 
-      <div class="mt-10 flex items-center space-x-6">
+      <div class="mt-10 flex flex-wrap items-center gap-4">
         <button id="submitReqBtn" onclick="processRequest()" class="bg-black hover:bg-gray-800 text-white font-bold py-3 px-8 rounded-sm transition uppercase text-sm tracking-wider">Submit Request</button>
         <span id="reqStatusMsg" class="font-bold text-sm italic"></span>
       </div>
@@ -119,7 +119,7 @@
     <div id="section-history" class="bg-white rounded-sm shadow-sm p-6 border border-gray-200 hidden">
       <h2 class="text-lg font-bold text-black mb-6 border-b border-gray-200 pb-3 uppercase tracking-wider">My Personal Request History</h2>
       <div class="overflow-x-auto">
-        <table class="w-full text-left border-collapse">
+        <table class="w-full text-left border-collapse min-w-[600px]">
           <thead>
             <tr class="bg-gray-100 text-black uppercase text-[10px] tracking-wider border-b border-gray-300">
               <th class="p-3 border-r border-gray-200">Date</th>
@@ -138,31 +138,58 @@
     <div id="section-database" class="bg-white rounded-sm shadow-sm p-6 border border-gray-200 hidden">
       <div class="flex justify-between items-center mb-6 border-b border-gray-200 pb-3">
         <h2 class="text-lg font-bold text-black uppercase tracking-wider">Master Requests Database</h2>
-        <button onclick="exportCSV()" class="bg-white border border-black hover:bg-gray-100 text-black font-bold py-1 px-4 rounded-sm transition text-xs uppercase tracking-wider">📥 Export CSV</button>
+        <button onclick="exportCSV()" class="bg-white border border-black hover:bg-gray-100 text-black font-bold py-1 px-4 rounded-sm transition text-xs uppercase tracking-wider whitespace-nowrap">📥 Export CSV</button>
       </div>
       
-      <div id="hrChartContainer" class="mb-8 bg-gray-50 p-6 rounded-sm border border-gray-200 hidden">
-        <h3 class="text-center font-bold text-black text-sm uppercase tracking-widest mb-4">Request Status Distribution</h3>
+      <div id="hrChartContainer" class="mb-8 bg-gray-50 p-6 rounded-sm border border-gray-200 hidden relative">
+        <div class="absolute top-4 right-4 flex space-x-2 z-10">
+          <div>
+            <label class="block text-[9px] font-bold text-gray-500 uppercase">From</label>
+            <input type="date" id="chartDateFromHR" onchange="updateHRChart()" class="text-xs px-2 py-1 border border-gray-300 rounded-sm">
+          </div>
+          <div>
+            <label class="block text-[9px] font-bold text-gray-500 uppercase">To</label>
+            <input type="date" id="chartDateToHR" onchange="updateHRChart()" class="text-xs px-2 py-1 border border-gray-300 rounded-sm">
+          </div>
+        </div>
+        <h3 class="text-center font-bold text-black text-sm uppercase tracking-widest mb-6">Request Status Distribution</h3>
         <div class="w-full max-w-xs mx-auto">
           <canvas id="hrPieChart"></canvas>
         </div>
       </div>
 
-      <div class="flex flex-col md:flex-row gap-4 mb-6 bg-gray-50 p-5 rounded-sm border border-gray-200">
-        <div class="flex-1">
+      <div class="flex flex-wrap gap-4 mb-6 bg-gray-50 p-5 rounded-sm border border-gray-200 items-end">
+        <div class="flex-1 min-w-[200px]">
           <label class="text-[10px] font-bold text-black uppercase tracking-wider">Search</label>
-          <input type="text" id="searchDb" onkeyup="applyFilters()" placeholder="Search Name, Emp ID, or Request ID..." class="w-full px-3 py-2 mt-2 border border-gray-300 rounded-sm focus:ring-1 focus:ring-black focus:border-black outline-none">
+          <input type="text" id="searchDb" onkeyup="applyFilters()" placeholder="Search Name, Emp ID, or Request ID..." class="w-full px-3 py-2 mt-1 border border-gray-300 rounded-sm focus:ring-1 focus:ring-black outline-none text-sm">
         </div>
-        <div class="md:w-1/3">
-          <label class="text-[10px] font-bold text-black uppercase tracking-wider">Filter by Outlet</label>
-          <select id="filterOutlet" onchange="applyFilters()" class="w-full px-3 py-2 mt-2 border border-gray-300 rounded-sm focus:ring-1 focus:ring-black focus:border-black outline-none">
+        <div class="w-full sm:w-auto">
+          <label class="text-[10px] font-bold text-black uppercase tracking-wider">Filter Date From</label>
+          <input type="date" id="filterDateFromDb" onchange="applyFilters()" class="w-full px-3 py-2 mt-1 border border-gray-300 rounded-sm focus:ring-1 focus:ring-black outline-none text-sm">
+        </div>
+        <div class="w-full sm:w-auto">
+          <label class="text-[10px] font-bold text-black uppercase tracking-wider">Filter Date To</label>
+          <input type="date" id="filterDateToDb" onchange="applyFilters()" class="w-full px-3 py-2 mt-1 border border-gray-300 rounded-sm focus:ring-1 focus:ring-black outline-none text-sm">
+        </div>
+        <div class="w-full sm:w-auto">
+          <label class="text-[10px] font-bold text-black uppercase tracking-wider">Status</label>
+          <select id="filterStatusDb" onchange="applyFilters()" class="w-full px-3 py-2 mt-1 border border-gray-300 rounded-sm focus:ring-1 focus:ring-black outline-none text-sm">
+            <option value="ALL">All Statuses</option>
+            <option value="PENDING">Pending</option>
+            <option value="DELIVERED">Delivered</option>
+            <option value="REJECTED">Rejected</option>
+          </select>
+        </div>
+        <div class="w-full sm:w-auto">
+          <label class="text-[10px] font-bold text-black uppercase tracking-wider">Outlet</label>
+          <select id="filterOutlet" onchange="applyFilters()" class="w-full px-3 py-2 mt-1 border border-gray-300 rounded-sm focus:ring-1 focus:ring-black outline-none text-sm">
             <option value="ALL">All Outlets</option>
           </select>
         </div>
       </div>
 
       <div class="overflow-x-auto">
-        <table class="w-full text-left border-collapse">
+        <table class="w-full text-left border-collapse min-w-[800px]">
           <thead>
             <tr class="bg-gray-100 text-black uppercase text-[10px] tracking-wider border-b border-gray-300">
               <th class="p-3 border-r border-gray-200">Date</th>
@@ -183,15 +210,37 @@
     <div id="section-inventory" class="bg-white rounded-sm shadow-sm p-6 border border-gray-200 hidden">
       <h2 class="text-lg font-bold text-black mb-6 border-b border-gray-200 pb-3 uppercase tracking-wider">Live Inventory Tracker</h2>
       
-      <div id="invChartContainer" class="mb-8 bg-gray-50 p-6 rounded-sm border border-gray-200">
-        <h3 class="text-center font-bold text-black text-sm uppercase tracking-widest mb-4">Uniform Movement (Total Delivered Items)</h3>
+      <div id="invChartContainer" class="mb-8 bg-gray-50 p-6 rounded-sm border border-gray-200 relative">
+        <div class="absolute top-4 right-4 flex space-x-2 z-10">
+          <div>
+            <label class="block text-[9px] font-bold text-gray-500 uppercase">From</label>
+            <input type="date" id="chartDateFromInv" onchange="updateInvChart()" class="text-xs px-2 py-1 border border-gray-300 rounded-sm">
+          </div>
+          <div>
+            <label class="block text-[9px] font-bold text-gray-500 uppercase">To</label>
+            <input type="date" id="chartDateToInv" onchange="updateInvChart()" class="text-xs px-2 py-1 border border-gray-300 rounded-sm">
+          </div>
+        </div>
+        <h3 class="text-center font-bold text-black text-sm uppercase tracking-widest mb-6">Uniform Movement (Delivered Items)</h3>
         <div class="w-full max-w-md mx-auto h-64">
           <canvas id="invMovementChart"></canvas>
         </div>
       </div>
 
+      <div class="flex flex-wrap gap-4 mb-6 bg-gray-50 p-5 rounded-sm border border-gray-200 items-end">
+        <div class="w-full sm:w-1/3">
+          <label class="text-[10px] font-bold text-black uppercase tracking-wider">Filter by Status</label>
+          <select id="filterStatusInv" onchange="applyFiltersInventory()" class="w-full px-3 py-2 mt-1 border border-gray-300 rounded-sm focus:ring-1 focus:ring-black outline-none text-sm">
+            <option value="ALL">All Statuses</option>
+            <option value="OPTIMAL">Optimal</option>
+            <option value="OVERSTOCK">Overstock</option>
+            <option value="LOW STOCK">Low Stock</option>
+          </select>
+        </div>
+      </div>
+
       <div class="overflow-x-auto">
-        <table class="w-full text-left border-collapse">
+        <table class="w-full text-left border-collapse min-w-[600px]">
           <thead>
             <tr class="bg-black text-white uppercase text-[10px] tracking-wider">
               <th class="p-3 border-r border-gray-700">Uniform Item</th>
@@ -210,28 +259,65 @@
     <div id="section-finance" class="bg-white rounded-sm shadow-sm p-6 border border-gray-200 hidden">
       <h2 class="text-lg font-bold text-black mb-6 border-b border-gray-200 pb-3 uppercase tracking-wider">Finance: Payroll & P&L Ledger</h2>
       
-      <div id="finChartContainer" class="mb-8 bg-gray-50 p-6 rounded-sm border border-gray-200 hidden">
-        <h3 class="text-center font-bold text-black text-sm uppercase tracking-widest mb-4">Company Expenses by Outlet (₱)</h3>
+      <div id="finChartContainer" class="mb-8 bg-gray-50 p-6 rounded-sm border border-gray-200 hidden relative">
+        <div class="absolute top-4 right-4 flex space-x-2 z-10">
+          <div>
+            <label class="block text-[9px] font-bold text-gray-500 uppercase">From</label>
+            <input type="date" id="chartDateFromFin" onchange="updateFinChart()" class="text-xs px-2 py-1 border border-gray-300 rounded-sm">
+          </div>
+          <div>
+            <label class="block text-[9px] font-bold text-gray-500 uppercase">To</label>
+            <input type="date" id="chartDateToFin" onchange="updateFinChart()" class="text-xs px-2 py-1 border border-gray-300 rounded-sm">
+          </div>
+        </div>
+        <h3 class="text-center font-bold text-black text-sm uppercase tracking-widest mb-6">Company Expenses by Outlet (₱)</h3>
         <div class="w-full max-w-2xl mx-auto h-64">
           <canvas id="finBarChart"></canvas>
         </div>
       </div>
 
-      <div class="flex flex-col md:flex-row gap-4 mb-6 bg-gray-50 p-5 rounded-sm border border-gray-200">
-        <div class="flex-1">
+      <div class="flex flex-wrap gap-4 mb-6 bg-gray-50 p-5 rounded-sm border border-gray-200 items-end">
+        <div class="flex-1 min-w-[200px]">
           <label class="text-[10px] font-bold text-black uppercase tracking-wider">Search</label>
-          <input type="text" id="searchFin" onkeyup="applyFiltersFinance()" placeholder="Search Name, Emp ID, or Request ID..." class="w-full px-3 py-2 mt-2 border border-gray-300 rounded-sm focus:ring-1 focus:ring-black focus:border-black outline-none">
+          <input type="text" id="searchFin" onkeyup="applyFiltersFinance()" placeholder="Search Name, Emp ID, or Request ID..." class="w-full px-3 py-2 mt-1 border border-gray-300 rounded-sm focus:ring-1 focus:ring-black outline-none text-sm">
         </div>
-        <div class="md:w-1/3">
-          <label class="text-[10px] font-bold text-black uppercase tracking-wider">Filter by Outlet</label>
-          <select id="filterOutletFin" onchange="applyFiltersFinance()" class="w-full px-3 py-2 mt-2 border border-gray-300 rounded-sm focus:ring-1 focus:ring-black focus:border-black outline-none">
+        <div class="w-full sm:w-auto">
+          <label class="text-[10px] font-bold text-black uppercase tracking-wider">Date From</label>
+          <input type="date" id="filterDateFromFin" onchange="applyFiltersFinance()" class="w-full px-3 py-2 mt-1 border border-gray-300 rounded-sm focus:ring-1 focus:ring-black outline-none text-sm">
+        </div>
+        <div class="w-full sm:w-auto">
+          <label class="text-[10px] font-bold text-black uppercase tracking-wider">Date To</label>
+          <input type="date" id="filterDateToFin" onchange="applyFiltersFinance()" class="w-full px-3 py-2 mt-1 border border-gray-300 rounded-sm focus:ring-1 focus:ring-black outline-none text-sm">
+        </div>
+        <div class="w-full sm:w-auto">
+          <label class="text-[10px] font-bold text-black uppercase tracking-wider">Cost Tag</label>
+          <select id="filterCostTagFin" onchange="applyFiltersFinance()" class="w-full px-3 py-2 mt-1 border border-gray-300 rounded-sm focus:ring-1 focus:ring-black outline-none text-sm">
+            <option value="ALL">All Cost Tags</option>
+            <option value="COMPANY_EXPENSE_PNL">P&L Expense</option>
+            <option value="ATD_PAYROLL">Payroll Deduct (ATD)</option>
+            <option value="FINAL_PAY_DEDUCTION">Final Pay Deduct</option>
+            <option value="ZERO_COST">Zero Cost</option>
+          </select>
+        </div>
+        <div class="w-full sm:w-auto">
+          <label class="text-[10px] font-bold text-black uppercase tracking-wider">Status</label>
+          <select id="filterStatusFin" onchange="applyFiltersFinance()" class="w-full px-3 py-2 mt-1 border border-gray-300 rounded-sm focus:ring-1 focus:ring-black outline-none text-sm">
+            <option value="ALL">All Statuses</option>
+            <option value="PENDING">Pending</option>
+            <option value="DELIVERED">Delivered</option>
+            <option value="REJECTED">Rejected</option>
+          </select>
+        </div>
+        <div class="w-full sm:w-auto">
+          <label class="text-[10px] font-bold text-black uppercase tracking-wider">Outlet</label>
+          <select id="filterOutletFin" onchange="applyFiltersFinance()" class="w-full px-3 py-2 mt-1 border border-gray-300 rounded-sm focus:ring-1 focus:ring-black outline-none text-sm">
             <option value="ALL">All Outlets</option>
           </select>
         </div>
       </div>
 
       <div class="overflow-x-auto">
-        <table class="w-full text-left border-collapse">
+        <table class="w-full text-left border-collapse min-w-[800px]">
           <thead>
             <tr class="bg-gray-100 text-black uppercase text-[10px] tracking-wider border-b border-gray-300">
               <th class="p-3 border-r border-gray-200">Date</th>
@@ -250,7 +336,7 @@
     </div>
   </div>
 
-  <div id="editModal" class="fixed inset-0 bg-gray-900 bg-opacity-75 hidden flex items-center justify-center z-50">
+  <div id="editModal" class="fixed inset-0 bg-gray-900 bg-opacity-75 hidden flex items-center justify-center z-50 p-4">
     <div class="bg-white p-8 rounded-sm shadow-2xl w-full max-w-3xl max-h-[90vh] overflow-y-auto">
       <div class="flex justify-between items-center mb-6 border-b border-gray-200 pb-3">
         <h2 class="text-xl font-bold text-black uppercase tracking-wider">Edit Request: <span id="editReqIdLabel" class="text-gray-500 text-sm font-normal ml-2"></span></h2>
@@ -293,7 +379,7 @@
     </div>
   </div>
 
-  <div id="financeModal" class="fixed inset-0 bg-gray-900 bg-opacity-75 hidden flex items-center justify-center z-50">
+  <div id="financeModal" class="fixed inset-0 bg-gray-900 bg-opacity-75 hidden flex items-center justify-center z-50 p-4">
     <div class="bg-white p-8 rounded-sm shadow-2xl w-full max-w-md">
       <div class="flex justify-between items-center mb-6 border-b border-gray-200 pb-3">
         <h2 class="text-xl font-bold text-black uppercase tracking-wider">Tag Deduction / Expense</h2>
@@ -316,7 +402,7 @@
     </div>
   </div>
 
-  <div id="restockModal" class="fixed inset-0 bg-gray-900 bg-opacity-75 hidden flex items-center justify-center z-50">
+  <div id="restockModal" class="fixed inset-0 bg-gray-900 bg-opacity-75 hidden flex items-center justify-center z-50 p-4">
     <div class="bg-white p-8 rounded-sm shadow-2xl w-full max-w-md">
       <div class="flex justify-between items-center mb-6 border-b border-gray-200 pb-3">
         <h2 class="text-xl font-bold text-black uppercase tracking-wider">Restock Inventory</h2>
@@ -353,7 +439,6 @@
     let finBarChartObj = null;
     let invMovementChartObj = null;
 
-    // A unified helper to send requests to your Google Apps Script backend
     async function gasApiCall(actionName, payloadData) {
       try {
         const response = await fetch(GAS_API_URL, {
@@ -366,6 +451,32 @@
         console.error("API Call Failed:", error);
         return { success: false, message: "Network Error: Could not connect to database." };
       }
+    }
+
+    // =========================================================================
+    // HELPER: DATE COMPARISON
+    // =========================================================================
+    function parseDateSafely(dateStr) {
+      if (!dateStr) return null;
+      const parsed = new Date(dateStr);
+      return isNaN(parsed) ? null : parsed;
+    }
+
+    function isDateInRange(targetDateStr, fromDateStr, toDateStr) {
+      const targetDate = parseDateSafely(targetDateStr);
+      if (!targetDate) return true; // If no valid timestamp, don't filter it out
+      
+      if (fromDateStr) {
+        const fromDate = parseDateSafely(fromDateStr);
+        fromDate.setHours(0, 0, 0, 0);
+        if (targetDate < fromDate) return false;
+      }
+      if (toDateStr) {
+        const toDate = parseDateSafely(toDateStr);
+        toDate.setHours(23, 59, 59, 999);
+        if (targetDate > toDate) return false;
+      }
+      return true;
     }
 
     // =========================================================================
@@ -657,16 +768,21 @@
 
         if (['FINANCE', 'HR', 'SUPER_ADMIN', 'DEPT_HEAD'].includes(currentUser.role)) {
           populateOutletDropdowns();
+          
           if (currentUser.role === 'FINANCE' || currentUser.role === 'SUPER_ADMIN') {
-            renderFinanceTable(globalRequestsData);
+            applyFiltersFinance(); // uses globalRequestsData + UI filters
           }
           if (currentUser.role === 'HR' || currentUser.role === 'SUPER_ADMIN' || currentUser.role === 'DEPT_HEAD') {
-            renderAdminTable(globalRequestsData);
+            applyFilters(); // uses globalRequestsData + UI filters
           }
           if (currentUser.role === 'HR' || currentUser.role === 'SUPER_ADMIN') {
-            renderInventoryTable(globalInventoryData);
+            applyFiltersInventory(); // uses globalInventoryData + UI filters
           }
-          renderCharts();
+          
+          // Initial chart renders
+          if(document.getElementById('hrPieChart')) updateHRChart();
+          if(document.getElementById('invMovementChart')) updateInvChart();
+          if(document.getElementById('finBarChart')) updateFinChart();
         }
       } else {
         console.error("Dashboard Sync Error:", response.message);
@@ -684,7 +800,6 @@
       });
 
       if (res.success) {
-        document.getElementById('searchDb').value = ''; 
         fetchDashboardData();
       } else {
         alert("Error: " + res.message);
@@ -724,7 +839,6 @@
       
       btn.innerText = "SAVE CHANGES"; btn.disabled = false;
       if (res.success) {
-        document.getElementById('searchDb').value = ''; 
         closeEditModal(); 
         fetchDashboardData();
       } else {
@@ -777,7 +891,6 @@
 
       btn.innerText = "ADD TAG"; btn.disabled = false;
       if (res.success) {
-        document.getElementById('searchFin').value = ''; 
         closeFinanceModal(); 
         fetchDashboardData();
       } else {
@@ -843,129 +956,171 @@
       document.getElementById('finStatusMsg').innerText = '';
     }
 
-    function renderCharts() {
-      if ((currentUser.role === 'HR' || currentUser.role === 'SUPER_ADMIN') && document.getElementById('hrPieChart')) {
-        const ctxPie = document.getElementById('hrPieChart').getContext('2d');
-        let pending = 0, delivered = 0, rejected = 0;
-        globalRequestsData.forEach(r => {
-          if(r.Status === 'PENDING') pending++;
-          else if(r.Status === 'DELIVERED') delivered++;
-          else if(r.Status === 'REJECTED') rejected++;
-        });
+    // --- Dynamic Charts Logic ---
+    
+    function updateHRChart() {
+      if (!document.getElementById('hrPieChart')) return;
+      
+      const dateFrom = document.getElementById('chartDateFromHR').value;
+      const dateTo = document.getElementById('chartDateToHR').value;
+      
+      let pending = 0, delivered = 0, rejected = 0;
+      globalRequestsData.forEach(r => {
+        if (!isDateInRange(r.Timestamp, dateFrom, dateTo)) return;
+        if(r.Status === 'PENDING') pending++;
+        else if(r.Status === 'DELIVERED') delivered++;
+        else if(r.Status === 'REJECTED') rejected++;
+      });
+      
+      const ctxPie = document.getElementById('hrPieChart').getContext('2d');
+      if(hrPieChartObj) hrPieChartObj.destroy();
+      hrPieChartObj = new Chart(ctxPie, {
+        type: 'doughnut',
+        data: {
+          labels: ['Pending', 'Delivered', 'Rejected'],
+          datasets: [{
+            data: [pending, delivered, rejected],
+            backgroundColor: ['#E5E7EB', '#000000', '#9CA3AF'],
+            borderWidth: 0
+          }]
+        },
+        options: { responsive: true, plugins: { legend: { position: 'bottom' } }, cutout: '75%' }
+      });
+    }
+
+    function updateInvChart() {
+      if (!document.getElementById('invMovementChart')) return;
+
+      const dateFrom = document.getElementById('chartDateFromInv').value;
+      const dateTo = document.getElementById('chartDateToInv').value;
+
+      // Calculate delivered quantities based on filtered requests
+      const deliveredTally = {};
+      globalRequestsData.forEach(req => {
+        if (req.Status !== 'DELIVERED') return;
+        if (!isDateInRange(req.Timestamp, dateFrom, dateTo)) return;
         
-        if(hrPieChartObj) hrPieChartObj.destroy();
-        hrPieChartObj = new Chart(ctxPie, {
-          type: 'doughnut',
-          data: {
-            labels: ['Pending', 'Delivered', 'Rejected'],
-            datasets: [{
-              data: [pending, delivered, rejected],
-              backgroundColor: ['#E5E7EB', '#000000', '#9CA3AF'],
-              borderWidth: 0
-            }]
-          },
-          options: { responsive: true, plugins: { legend: { position: 'bottom' } }, cutout: '75%' }
-        });
-      }
+        if(req.RawItems) {
+           req.RawItems.forEach(item => {
+             const key = item.uniform;
+             if(!deliveredTally[key]) deliveredTally[key] = 0;
+             deliveredTally[key] += (Number(item.qty) || 0);
+           });
+        }
+      });
 
-      if ((currentUser.role === 'HR' || currentUser.role === 'SUPER_ADMIN') && document.getElementById('invMovementChart') && globalInventoryData) {
-        const ctxInv = document.getElementById('invMovementChart').getContext('2d');
-        
-        const filteredInv = globalInventoryData.filter(item => item.TOTAL_DELIVERED >= 1);
-        let sortedInv = [...filteredInv].sort((a,b) => b.TOTAL_DELIVERED - a.TOTAL_DELIVERED);
+      // Format for chart
+      const chartData = Object.keys(deliveredTally).map(key => ({
+        UNIFORM: key,
+        TOTAL_DELIVERED: deliveredTally[key]
+      })).filter(item => item.TOTAL_DELIVERED >= 1).sort((a,b) => b.TOTAL_DELIVERED - a.TOTAL_DELIVERED);
 
-        let labels = sortedInv.map(i => i.UNIFORM);
-        let dataDelivered = sortedInv.map(i => i.TOTAL_DELIVERED);
+      let labels = chartData.map(i => i.UNIFORM);
+      let dataDelivered = chartData.map(i => i.TOTAL_DELIVERED);
+      let bgColors = chartData.map((_, i) => {
+         let lightness = Math.max(10, 10 + (i * (80 / Math.max(1, chartData.length))));
+         return `hsl(0, 0%, ${lightness}%)`;
+      });
 
-        let bgColors = sortedInv.map((_, i) => {
-           let lightness = Math.max(10, 10 + (i * (80 / Math.max(1, sortedInv.length))));
-           return `hsl(0, 0%, ${lightness}%)`;
-        });
+      const ctxInv = document.getElementById('invMovementChart').getContext('2d');
+      if(invMovementChartObj) invMovementChartObj.destroy();
+      invMovementChartObj = new Chart(ctxInv, {
+        type: 'doughnut',
+        data: {
+          labels: labels.length ? labels : ['No Movement'],
+          datasets: [{
+            label: 'Total Items Delivered',
+            data: dataDelivered.length ? dataDelivered :,
+            backgroundColor: dataDelivered.length ? bgColors : ['#F3F4F6'],
+            borderWidth: 1,
+            borderColor: '#ffffff'
+          }]
+        },
+        options: {
+          responsive: true, maintainAspectRatio: false, cutout: '58%',
+          plugins: { legend: { position: 'right', labels: { boxWidth: 12 } }, tooltip: { enabled: !!dataDelivered.length } }
+        }
+      });
+    }
 
-        if(invMovementChartObj) invMovementChartObj.destroy();
-        invMovementChartObj = new Chart(ctxInv, {
-          type: 'doughnut',
-          data: {
-            labels: labels,
-            datasets: [{
-              label: 'Total Items Delivered',
-              data: dataDelivered,
-              backgroundColor: bgColors,
-              borderWidth: 1,
-              borderColor: '#ffffff'
-            }]
-          },
-          options: {
-            responsive: true,
-            maintainAspectRatio: false,
-            cutout: '58%',
-            plugins: {
-              legend: { position: 'right', labels: { boxWidth: 12 } }
-            }
-          }
-        });
-      }
+    function updateFinChart() {
+      if (!document.getElementById('finBarChart')) return;
+      
+      const dateFrom = document.getElementById('chartDateFromFin').value;
+      const dateTo = document.getElementById('chartDateToFin').value;
 
-      if ((currentUser.role === 'FINANCE' || currentUser.role === 'SUPER_ADMIN') && document.getElementById('finBarChart')) {
-        const ctxBar = document.getElementById('finBarChart').getContext('2d');
-        const outletTotals = {};
-        const outletLabels = {};
-        
-        globalRequestsData.forEach(r => {
-          if (r.CostCategory === 'COMPANY_EXPENSE_PNL') {
-            const rawOutlet = String(r.Outlet || 'Unknown').trim();
-            const outletKey = rawOutlet.toLowerCase();
-            const displayOutlet = rawOutlet || 'Unknown';
+      const outletTotals = {};
+      const outletLabels = {};
+      
+      globalRequestsData.forEach(r => {
+        if (r.CostCategory === 'COMPANY_EXPENSE_PNL') {
+          if (!isDateInRange(r.Timestamp, dateFrom, dateTo)) return;
+          
+          const rawOutlet = String(r.Outlet || 'Unknown').trim();
+          const outletKey = rawOutlet.toLowerCase();
+          const displayOutlet = rawOutlet || 'Unknown';
 
-            if (!outletTotals[outletKey]) outletTotals[outletKey] = 0;
-            if (!outletLabels[outletKey]) outletLabels[outletKey] = displayOutlet;
+          if (!outletTotals[outletKey]) outletTotals[outletKey] = 0;
+          if (!outletLabels[outletKey]) outletLabels[outletKey] = displayOutlet;
 
-            outletTotals[outletKey] += Number(r.TotalCost) || 0;
-          }
-        });
-        
-        const labels = Object.keys(outletTotals).map(key => outletLabels[key]);
-        const data = Object.keys(outletTotals).map(key => outletTotals[key]);
-        
-        if(finBarChartObj) finBarChartObj.destroy();
-        finBarChartObj = new Chart(ctxBar, {
-          type: 'bar',
-          data: {
-            labels: labels,
-            datasets: [{
-              label: 'Total P&L Expense (₱)',
-              data: data,
-              backgroundColor: '#000000',
-              borderRadius: 2
-            }]
-          },
-          options: {
-            responsive: true,
-            maintainAspectRatio: false,
-            scales: { y: { beginAtZero: true, grid: { color: '#E5E7EB' } }, x: { grid: { display: false } } }
-          }
-        });
-      }
+          outletTotals[outletKey] += Number(r.TotalCost) || 0;
+        }
+      });
+      
+      const labels = Object.keys(outletTotals).map(key => outletLabels[key]);
+      const data = Object.keys(outletTotals).map(key => outletTotals[key]);
+      
+      const ctxBar = document.getElementById('finBarChart').getContext('2d');
+      if(finBarChartObj) finBarChartObj.destroy();
+      finBarChartObj = new Chart(ctxBar, {
+        type: 'bar',
+        data: {
+          labels: labels.length ? labels : ['No Data'],
+          datasets: [{
+            label: 'Total P&L Expense (₱)',
+            data: data.length ? data :,
+            backgroundColor: '#000000',
+            borderRadius: 2
+          }]
+        },
+        options: {
+          responsive: true, maintainAspectRatio: false,
+          scales: { y: { beginAtZero: true, grid: { color: '#E5E7EB' } }, x: { grid: { display: false } } }
+        }
+      });
     }
 
     function populateOutletDropdowns() {
       const uniqueOutlets = [...new Set(globalRequestsData.map(req => req.Outlet))].sort();
       const dbSelect = document.getElementById('filterOutlet');
-      dbSelect.innerHTML = '<option value="ALL">All Outlets</option>';
-      uniqueOutlets.forEach(out => { if(out) dbSelect.innerHTML += `<option value="${out}">${out}</option>`; });
+      if(dbSelect) {
+        dbSelect.innerHTML = '<option value="ALL">All Outlets</option>';
+        uniqueOutlets.forEach(out => { if(out) dbSelect.innerHTML += `<option value="${out}">${out}</option>`; });
+      }
       
       const finSelect = document.getElementById('filterOutletFin');
-      finSelect.innerHTML = '<option value="ALL">All Outlets</option>';
-      uniqueOutlets.forEach(out => { if(out) finSelect.innerHTML += `<option value="${out}">${out}</option>`; });
+      if(finSelect) {
+        finSelect.innerHTML = '<option value="ALL">All Outlets</option>';
+        uniqueOutlets.forEach(out => { if(out) finSelect.innerHTML += `<option value="${out}">${out}</option>`; });
+      }
     }
 
+    // --- Table Filter Functions ---
+    
     function applyFilters() {
       const search = document.getElementById('searchDb').value.toLowerCase();
       const outlet = document.getElementById('filterOutlet').value;
+      const status = document.getElementById('filterStatusDb').value;
+      const dateFrom = document.getElementById('filterDateFromDb').value;
+      const dateTo = document.getElementById('filterDateToDb').value;
+
       const filtered = globalRequestsData.filter(req => {
         const textMatch = (req.EmployeeName.toLowerCase().includes(search) || String(req.EmployeeID).includes(search) || req.RequestID.toLowerCase().includes(search));
         const outletMatch = (outlet === 'ALL' || req.Outlet === outlet);
-        return textMatch && outletMatch;
+        const statusMatch = (status === 'ALL' || req.Status.toUpperCase() === status);
+        const dateMatch = isDateInRange(req.Timestamp, dateFrom, dateTo);
+        
+        return textMatch && outletMatch && statusMatch && dateMatch;
       });
       renderAdminTable(filtered);
     }
@@ -973,12 +1128,37 @@
     function applyFiltersFinance() {
       const search = document.getElementById('searchFin').value.toLowerCase();
       const outlet = document.getElementById('filterOutletFin').value;
+      const costTag = document.getElementById('filterCostTagFin').value;
+      const status = document.getElementById('filterStatusFin').value;
+      const dateFrom = document.getElementById('filterDateFromFin').value;
+      const dateTo = document.getElementById('filterDateToFin').value;
+
       const filtered = globalRequestsData.filter(req => {
         const textMatch = (req.EmployeeName.toLowerCase().includes(search) || String(req.EmployeeID).includes(search) || req.RequestID.toLowerCase().includes(search));
         const outletMatch = (outlet === 'ALL' || req.Outlet === outlet);
-        return textMatch && outletMatch;
+        const costTagMatch = (costTag === 'ALL' || req.CostCategory === costTag);
+        const statusMatch = (status === 'ALL' || req.Status.toUpperCase() === status);
+        const dateMatch = isDateInRange(req.Timestamp, dateFrom, dateTo);
+
+        return textMatch && outletMatch && costTagMatch && statusMatch && dateMatch;
       });
       renderFinanceTable(filtered);
+    }
+
+    function applyFiltersInventory() {
+      const statusFilter = document.getElementById('filterStatusInv').value;
+      
+      const filtered = globalInventoryData.filter(item => {
+        let itemStatus = 'OPTIMAL';
+        if (item.AVAILABLE_STOCK > item.BASE_STOCK && item.BASE_STOCK > 0) {
+          itemStatus = 'OVERSTOCK';
+        } else if (item.AVAILABLE_STOCK <= 5) {
+          itemStatus = 'LOW STOCK';
+        }
+        
+        return statusFilter === 'ALL' || itemStatus === statusFilter;
+      });
+      renderInventoryTable(filtered);
     }
 
     function getCostBadge(category) {
@@ -1043,7 +1223,7 @@
       requests.forEach(req => {
         let actionBtn = '';
         if ((currentUser.role === 'FINANCE' || currentUser.role === 'SUPER_ADMIN') && req.Status === 'DELIVERED') {
-           actionBtn = `<button onclick="openFinanceModal('${req.RequestID}')" class="px-3 py-1 bg-black text-white hover:bg-gray-800 font-bold rounded-sm text-[10px] transition uppercase tracking-wider">+ ADD TAG</button>`;
+           actionBtn = `<button onclick="openFinanceModal('${req.RequestID}')" class="px-3 py-1 bg-black text-white hover:bg-gray-800 font-bold rounded-sm text-[10px] transition uppercase tracking-wider whitespace-nowrap">+ ADD TAG</button>`;
         } else if ((currentUser.role === 'FINANCE' || currentUser.role === 'SUPER_ADMIN') && req.Status === 'PENDING') {
            actionBtn = `<span class="text-[10px] text-gray-400 font-bold italic uppercase tracking-wider">Awaiting Delivery</span>`;
         }
@@ -1057,7 +1237,7 @@
     function renderInventoryTable(inventory) {
       const tbody = document.getElementById('inventoryTableBody');
       tbody.innerHTML = '';
-      if(inventory.length === 0) return;
+      if(inventory.length === 0) { tbody.innerHTML = `<tr><td colspan="6" class="p-6 text-center text-gray-400 uppercase tracking-widest text-xs font-bold">No inventory matched.</td></tr>`; return; }
       inventory.forEach(item => {
         let statusBadge = `<span class="bg-gray-200 text-black px-3 py-1 rounded-sm text-[10px] font-bold uppercase tracking-widest">OPTIMAL</span>`;
         let rowClass = "border-b border-gray-200 hover:bg-gray-50 transition";
@@ -1065,7 +1245,7 @@
         if (item.AVAILABLE_STOCK > item.BASE_STOCK && item.BASE_STOCK > 0) {
           statusBadge = `<span class="bg-white border border-black text-black px-3 py-1 rounded-sm text-[10px] font-bold uppercase tracking-widest">OVERSTOCK</span>`;
         } else if (item.AVAILABLE_STOCK <= 5) {
-          statusBadge = `<span class="bg-black text-red px-3 py-1 rounded-sm text-[10px] font-bold uppercase tracking-widest animate-pulse">LOW STOCK</span>`;
+          statusBadge = `<span class="bg-red text-white px-3 py-1 rounded-sm text-[10px] font-bold uppercase tracking-widest animate-pulse">LOW STOCK</span>`;
           rowClass = "border-b border-gray-200 bg-gray-100";
         }
         
