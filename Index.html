@@ -23,7 +23,7 @@
         <label class="block text-black text-sm font-bold mb-2">Security PIN <span class="text-xs text-gray-400 font-normal ml-1">(Leave blank for standard)</span></label>
         <input type="password" id="pinInput" class="w-full px-4 py-3 border border-gray-300 rounded-sm focus:ring-1 focus:ring-black focus:border-black outline-none transition" placeholder="••••">
       </div>
-      <button id="loginBtn" onclick="attemptLogin()" class="w-full bg-black hover:bg-gray-800 text-white font-bold py-3 px-4 rounded-sm transition tracking-wider uppercase text-sm">Log In</button>
+      <button id="loginBtn" onclick="attemptLogin()" class="w-full bg-black hover:bg-gray-800 text-white font-bold py-3 px-4 rounded-sm transition tracking-wider uppercase text-sm">LOG IN</button>
       <p id="errorMessage" class="text-gray-500 font-semibold italic text-sm mt-4 text-center hidden"></p>
     </div>
   </div>
@@ -339,109 +339,136 @@
   </div>
 
   <script>
+    const STEIN_API_BASE = "https://api.steinhq.com/v1/storages/6a3c91a392b1163e970e764b";
+    
     let currentUser = null;
     let globalRequestsData = [];
     let globalUniformsList = [];
     let globalInventoryData = [];
+    let globalLineItems = [];
+    let globalInventoryRaw = [];
     
     let hrPieChartObj = null;
     let finBarChartObj = null;
     let invMovementChartObj = null;
 
+    // --- AUTHENTICATION ---
     async function attemptLogin() {
-  const empId = document.getElementById('empIdInput').value.trim();
-  const pin = document.getElementById('pinInput').value.trim();
-  
-  if (!empId) { showError("Please enter your Employee ID."); return; }
-  
-  document.getElementById('loginBtn').innerText = "AUTHENTICATING...";
-  document.getElementById('loginBtn').disabled = true;
+      const empId = document.getElementById('empIdInput').value.trim();
+      const pin = document.getElementById('pinInput').value.trim();
+      
+      if (!empId) { showError("Please enter your Employee ID."); return; }
+      
+      document.getElementById('loginBtn').innerText = "AUTHENTICATING...";
+      document.getElementById('loginBtn').disabled = true;
+      document.getElementById('errorMessage').classList.add('hidden');
 
-  try {
-    // 1. Fetch the data directly from your Google Sheet via Stein
-    const response = await fetch('https://api.steinhq.com/v1/storages/6a3c91a392b1163e970e764b');
-    const superAdmins = await response.json();
-    
-    // 2. Perform the logic in the browser
-    const userRecord = superAdmins.find(u => u['EMPLOYEE ID #'] === empId);
-    
-    if (userRecord) {
-      if (userRecord['PIN'] !== pin) {
-        showError("Invalid Security PIN.");
-      } else {
-        // Build the success payload manually
-        handleLoginResponse({ 
-          success: true, 
-          role: "SUPER_ADMIN", 
-          empId: empId, 
-          user: userRecord 
-        });
+      try {
+        // Fetch users from all roles to find a match
+        const [superAdmins, hrAccess, finAccess, deptHeads, employees, uniforms] = await Promise.all([
+          fetch(`${STEIN_API_BASE}/SUPER%20ADMIN%20ACCESS`).then(r => r.json()),
+          fetch(`${STEIN_API_BASE}/HR%20ACCESS`).then(r => r.json()),
+          fetch(`${STEIN_API_BASE}/FINANCE%20ACCESS`).then(r => r.json()),
+          fetch(`${STEIN_API_BASE}/DEPARTMENT%20OPs%20HEAD`).then(r => r.json()),
+          fetch(`${STEIN_API_BASE}/EMPLOYEE%20LIST`).then(r => r.json()),
+          fetch(`${STEIN_API_BASE}/UNIFORM%20LIST`).then(r => r.json())
+        ]);
+
+        globalUniformsList = uniforms.map(u => u.UNIFORM).filter(n => n);
+        globalInventoryRaw = uniforms; 
+
+        let userRecord = null;
+        let role = "";
+
+        // Check roles in hierarchy
+        userRecord = superAdmins.find(u => String(u['EMPLOYEE ID #']).trim() === empId);
+        if(userRecord) { role = "SUPER_ADMIN"; }
+        else {
+          userRecord = hrAccess.find(u => String(u['EMPLOYEE ID #']).trim() === empId);
+          if(userRecord) { role = "HR"; }
+          else {
+            userRecord = finAccess.find(u => String(u['EMPLOYEE ID #']).trim() === empId);
+            if(userRecord) { role = "FINANCE"; }
+            else {
+              userRecord = deptHeads.find(u => String(u['EMPLOYEE ID #']).trim() === empId);
+              if(userRecord) { role = "DEPT_HEAD"; }
+              else {
+                userRecord = employees.find(u => String(u['EMPLOYEE ID #']).trim() === empId);
+                if(userRecord) { role = "EMPLOYEE"; }
+              }
+            }
+          }
+        }
+
+        if(userRecord) {
+          // Check PIN for privileged roles
+          if(['SUPER_ADMIN', 'HR', 'FINANCE'].includes(role)) {
+             if(String(userRecord['PIN'] || "").trim() !== pin) {
+                showError("Invalid Security PIN.");
+                document.getElementById('loginBtn').innerText = "LOG IN";
+                document.getElementById('loginBtn').disabled = false;
+                return;
+             }
+          }
+          // Enrich data
+          const fullRecord = employees.find(u => String(u['EMPLOYEE ID #']).trim() === empId) || userRecord;
+          handleLoginResponse({success: true, role: role, empId: empId, user: fullRecord});
+        } else {
+           showError("ID not found. Access Denied.");
+           document.getElementById('loginBtn').innerText = "LOG IN";
+           document.getElementById('loginBtn').disabled = false;
+        }
+      } catch (error) {
+        showError("Network Error: Could not connect to database.");
+        document.getElementById('loginBtn').innerText = "LOG IN";
+        document.getElementById('loginBtn').disabled = false;
       }
-    } else {
-       showError("ID not found. Access Denied.");
     }
-  } catch (error) {
-    showError("Network Error: Could not connect to database.");
-  } finally {
-    document.getElementById('loginBtn').innerText = "LOG IN";
-    document.getElementById('loginBtn').disabled = false;
-  }
-}
 
     function handleLoginResponse(response) {
       document.getElementById('loginBtn').innerText = "LOG IN";
       document.getElementById('loginBtn').disabled = false;
-      if (response.success) {
-        currentUser = response;
-        document.getElementById('uiName').innerText = response.user['COMPLETE NAME'] || "Name Unknown";
-        document.getElementById('uiRole').innerText = response.role;
-        document.getElementById('uiDept').innerText = response.user['DEPARTMENT'] || "N/A";
-        document.getElementById('uiOutlet').innerText = response.user['OUTLET'] || "N/A";
-        
-        resetFormUI();
-        if (response.role === 'HR' || response.role === 'SUPER_ADMIN') {
-          document.getElementById('hrProxySection').classList.remove('hidden');
-        } else {
-          document.getElementById('hrProxySection').classList.add('hidden');
-        }
-        
-        globalUniformsList = response.uniforms || [];
-        document.getElementById('itemsContainer').innerHTML = '';
-        addItemRow('itemsContainer');
-        
-        document.getElementById('tabNavigation').classList.remove('hidden');
-        document.getElementById('btnTab-history').classList.remove('hidden');
-        
-        if (response.role === 'DEPT_HEAD') {
-          document.getElementById('btnTab-database').classList.remove('hidden');
-        } else if (response.role === 'HR') {
-          document.getElementById('btnTab-database').classList.remove('hidden');
-          document.getElementById('btnTab-inventory').classList.remove('hidden');
-          document.getElementById('hrChartContainer').classList.remove('hidden');
-        } else if (response.role === 'FINANCE') {
-          document.getElementById('btnTab-finance').classList.remove('hidden');
-          document.getElementById('finChartContainer').classList.remove('hidden');
-        } else if (response.role === 'SUPER_ADMIN') {
-          document.getElementById('btnTab-database').classList.remove('hidden');
-          document.getElementById('btnTab-inventory').classList.remove('hidden');
-          document.getElementById('btnTab-finance').classList.remove('hidden');
-          document.getElementById('hrChartContainer').classList.remove('hidden');
-          document.getElementById('finChartContainer').classList.remove('hidden');
-        }
-        
-        fetchDashboardData();
-        switchTab('request');
-        document.getElementById('loginScreen').classList.add('hidden');
-        document.getElementById('dashboardScreen').classList.remove('hidden');
+      
+      currentUser = response;
+      document.getElementById('uiName').innerText = response.user['COMPLETE NAME'] || "Name Unknown";
+      document.getElementById('uiRole').innerText = response.role;
+      document.getElementById('uiDept').innerText = response.user['DEPARTMENT'] || "N/A";
+      document.getElementById('uiOutlet').innerText = response.user['OUTLET'] || "N/A";
+      
+      resetFormUI();
+      if (response.role === 'HR' || response.role === 'SUPER_ADMIN') {
+        document.getElementById('hrProxySection').classList.remove('hidden');
       } else {
-        showError(response.message);
+        document.getElementById('hrProxySection').classList.add('hidden');
       }
-    }
-
-    function handleLoginCrash(error) {
-      document.getElementById('loginBtn').innerText = "LOG IN";
-      document.getElementById('loginBtn').disabled = false;
-      showError("System Error: " + error.message);
+      
+      document.getElementById('itemsContainer').innerHTML = '';
+      addItemRow('itemsContainer');
+      
+      document.getElementById('tabNavigation').classList.remove('hidden');
+      document.getElementById('btnTab-history').classList.remove('hidden');
+      
+      if (response.role === 'DEPT_HEAD') {
+        document.getElementById('btnTab-database').classList.remove('hidden');
+      } else if (response.role === 'HR') {
+        document.getElementById('btnTab-database').classList.remove('hidden');
+        document.getElementById('btnTab-inventory').classList.remove('hidden');
+        document.getElementById('hrChartContainer').classList.remove('hidden');
+      } else if (response.role === 'FINANCE') {
+        document.getElementById('btnTab-finance').classList.remove('hidden');
+        document.getElementById('finChartContainer').classList.remove('hidden');
+      } else if (response.role === 'SUPER_ADMIN') {
+        document.getElementById('btnTab-database').classList.remove('hidden');
+        document.getElementById('btnTab-inventory').classList.remove('hidden');
+        document.getElementById('btnTab-finance').classList.remove('hidden');
+        document.getElementById('hrChartContainer').classList.remove('hidden');
+        document.getElementById('finChartContainer').classList.remove('hidden');
+      }
+      
+      fetchDashboardData();
+      switchTab('request');
+      document.getElementById('loginScreen').classList.add('hidden');
+      document.getElementById('dashboardScreen').classList.remove('hidden');
     }
 
     function showError(msg) {
@@ -454,6 +481,7 @@
       globalRequestsData = [];
       globalUniformsList = [];
       globalInventoryData = [];
+      globalLineItems = [];
       document.getElementById('empIdInput').value = "";
       document.getElementById('pinInput').value = "";
       document.getElementById('proxyEmpId').value = "";
@@ -531,6 +559,19 @@
       }
     }
 
+    function determineCostCategory(requestType) {
+      const companyExpense = ['Onboarding (New Hire)', 'Promotion', 'Lateral Transfer', 'Work Anniversary', 'Calamity Replacement', 'Workplace Incident'];
+      const atdPayroll = ['ATD (Wear & Tear)', 'Maternity'];
+      const finalPay = ['Offboarding/Clearance'];
+      const zeroCost = ['Size Swap (Return in 1-2 Days)'];
+
+      if (companyExpense.includes(requestType)) return 'COMPANY_EXPENSE_PNL';
+      if (atdPayroll.includes(requestType)) return 'ATD_PAYROLL';
+      if (finalPay.includes(requestType)) return 'FINAL_PAY_DEDUCTION';
+      if (zeroCost.includes(requestType)) return 'ZERO_COST';
+      return 'UNKNOWN';
+    }
+
     function getAllowedUniforms(userRecord, forceAll = false) {
       if (forceAll || !userRecord) return globalUniformsList;
       
@@ -580,7 +621,8 @@
       container.appendChild(row);
     }
 
-    function processRequest() {
+    // --- MAIN API REQUESTS ---
+    async function processRequest() {
       const isProxy = document.getElementById('isProxyRequest') ? document.getElementById('isProxyRequest').checked : false;
       let type = "";
       let targetEmpId = currentUser.empId;
@@ -613,54 +655,169 @@
 
       if (!type) { statusMsg.innerText = "Please select a Request Type."; statusMsg.className = "text-gray-600 font-bold text-sm italic"; return; }
       if (itemsToSubmit.length === 0) { statusMsg.innerText = "Please select at least one item."; statusMsg.className = "text-gray-600 font-bold text-sm italic"; return; }
-      if ((type === 'ATD (Wear & Tear)' || type === 'Maternity' || type === 'Offboarding/Clearance') && !consent) {
+      
+      const costCat = determineCostCategory(type);
+      if (costCat === 'ATD_PAYROLL' && !consent) {
         statusMsg.innerText = "You must agree to payroll deduction."; statusMsg.className = "text-gray-600 font-bold text-sm italic"; return;
       }
 
       btn.innerText = "SENDING..."; btn.disabled = true;
       statusMsg.innerText = "Processing request..."; statusMsg.className = "text-gray-600 font-bold text-sm italic";
       
-      google.script.run.withSuccessHandler(function(res) {
+      let totalCost = 0;
+      if (costCat !== 'ZERO_COST') {
+        itemsToSubmit.forEach(reqItem => {
+          const dbItem = globalInventoryRaw.find(i => String(i.UNIFORM).trim().toLowerCase() === String(reqItem.uniform).trim().toLowerCase());
+          if (dbItem) totalCost += (Number(dbItem.PRICE) * Number(reqItem.qty));
+        });
+      }
+
+      const timestamp = new Date();
+      const requestId = 'REQ-' + timestamp.getTime();
+      const timeStr = timestamp.toLocaleDateString() + " " + timestamp.toLocaleTimeString();
+
+      const requestPayload = [{
+        RequestID: requestId, Timestamp: timeStr, EmployeeID: targetEmpId,
+        RequestType: type, TotalCost: totalCost, CostCategory: costCat,
+        Status: 'PENDING', PayrollDeductConsent: consent ? 'YES' : 'NO',
+        InitiatedBy: initiatorName, ActionBy: '', EditedBy: ''
+      }];
+
+      const lineItemPayload = itemsToSubmit.map(item => ({
+        RequestID: requestId, Uniform: item.uniform, Quantity: item.qty
+      }));
+
+      try {
+        await fetch(`${STEIN_API_BASE}/Requests`, {
+          method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(requestPayload)
+        });
+        await fetch(`${STEIN_API_BASE}/LineItems`, {
+          method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(lineItemPayload)
+        });
+
         btn.innerText = "SUBMIT REQUEST"; btn.disabled = false;
-        if(res.success) {
-          if (isProxy) statusMsg.innerText = "PROXY REQUEST LOGGED: " + targetEmpId;
-          else statusMsg.innerText = res.message.toUpperCase();
-          statusMsg.className = "text-black font-bold text-sm uppercase tracking-wider";
-          document.getElementById('itemsContainer').innerHTML = '';
-          addItemRow('itemsContainer');
-          resetFormUI();
-          fetchDashboardData();
-        } else {
-          statusMsg.innerText = res.message.toUpperCase();
-          statusMsg.className = "text-gray-600 font-bold text-sm italic";
-        }
-      }).submitRequest({ empId: targetEmpId, requestType: type, consent: consent, items: itemsToSubmit, initiatedBy: initiatorName });
+        if (isProxy) statusMsg.innerText = "PROXY REQUEST LOGGED: " + targetEmpId;
+        else statusMsg.innerText = "REQUEST SUBMITTED SUCCESSFULLY";
+        statusMsg.className = "text-black font-bold text-sm uppercase tracking-wider";
+        document.getElementById('itemsContainer').innerHTML = '';
+        addItemRow('itemsContainer');
+        resetFormUI();
+        fetchDashboardData();
+      } catch(error) {
+        btn.innerText = "SUBMIT REQUEST"; btn.disabled = false;
+        statusMsg.innerText = "NETWORK ERROR. PLEASE TRY AGAIN.";
+        statusMsg.className = "text-gray-600 font-bold text-sm italic";
+      }
     }
 
-    function fetchDashboardData() {
-      google.script.run.withSuccessHandler(function(response) {
-        if(response.success) {
-          renderHistoryTable(response.myHistory);
-          if(currentUser.role === 'FINANCE') {
-            globalRequestsData = response.adminRequests;
-            populateOutletDropdowns();
-            renderFinanceTable(globalRequestsData);
+    async function fetchDashboardData() {
+      try {
+        const [requests, employees, lineItems, financeTags, uniforms] = await Promise.all([
+          fetch(`${STEIN_API_BASE}/Requests`).then(r => r.json()),
+          fetch(`${STEIN_API_BASE}/EMPLOYEE%20LIST`).then(r => r.json()),
+          fetch(`${STEIN_API_BASE}/LineItems`).then(r => r.json()),
+          fetch(`${STEIN_API_BASE}/FinanceTags`).then(r => r.json()),
+          fetch(`${STEIN_API_BASE}/UNIFORM%20LIST`).then(r => r.json())
+        ]);
+
+        globalLineItems = lineItems;
+        globalInventoryRaw = uniforms;
+
+        // Perform inventory math client-side
+        const pendingReqIds = requests.filter(r => r.Status === 'PENDING').map(r => String(r.RequestID).trim());
+        const pendingDeductions = {};
+        const allDelivered = {};
+
+        lineItems.forEach(item => {
+          const reqId = String(item.RequestID).trim();
+          const uniName = String(item.Uniform).trim().toLowerCase();
+          const qty = Number(item.Quantity) || 0;
+          
+          if (pendingReqIds.includes(reqId)) {
+            if (!pendingDeductions[uniName]) pendingDeductions[uniName] = 0;
+            pendingDeductions[uniName] += qty;
+          }
+          const parentReq = requests.find(r => String(r.RequestID).trim() === reqId);
+          if (parentReq && parentReq.Status === 'DELIVERED') {
+            if (!allDelivered[uniName]) allDelivered[uniName] = 0;
+            allDelivered[uniName] += qty;
+          }
+        });
+
+        globalInventoryData = uniforms.map(u => {
+          const uName = String(u.UNIFORM).trim().toLowerCase();
+          return {
+            UNIFORM: u.UNIFORM, // Display original casing
+            PRICE: Number(u.PRICE) || 0,
+            BASE_STOCK: Number(u.BASE_STOCK) || 0,
+            AVAILABLE_STOCK: Number(u.INVENTORY) || 0,
+            PENDING_QTY: pendingDeductions[uName] || 0,
+            TOTAL_DELIVERED: allDelivered[uName] || 0
+          };
+        });
+
+        // Enrich requests
+        const itemsByReq = {};
+        lineItems.forEach(item => {
+          const rId = String(item.RequestID).trim();
+          if(!itemsByReq[rId]) itemsByReq[rId] = [];
+          itemsByReq[rId].push(`${item.Quantity}x ${item.Uniform}`);
+        });
+
+        const tagsByReq = {};
+        financeTags.forEach(tag => {
+          const rId = String(tag.RequestID).trim();
+          if(!tagsByReq[rId]) tagsByReq[rId] = [];
+          tagsByReq[rId].push(`${tag.CapturedPeriod} ${tag.Remarks ? '('+tag.Remarks+')' : ''}`);
+        });
+
+        let enrichedRequests = requests.map(req => {
+          const rId = String(req.RequestID).trim();
+          req.ItemsListHtml = itemsByReq[rId] ? itemsByReq[rId].join('<br>') : '<span class="text-gray-400">No items</span>';
+          req.RawItems = lineItems.filter(l => String(l.RequestID).trim() === rId).map(l => ({uniform: l.Uniform, qty: l.Quantity}));
+          req.FinanceTagsHtml = tagsByReq[rId] ? tagsByReq[rId].join('<br>') : '<span class="text-gray-400 text-[10px] italic">Unprocessed</span>';
+          
+          const emp = employees.find(e => String(e['EMPLOYEE ID #']).trim() === String(req.EmployeeID).trim());
+          req.EmployeeName = emp ? emp['COMPLETE NAME'] : 'Unknown Employee';
+          req.Outlet = emp ? emp['OUTLET'] : 'Unknown Outlet';
+          return req;
+        });
+        enrichedRequests.reverse();
+
+        const myHistory = enrichedRequests.filter(req => String(req.EmployeeID).trim() === String(currentUser.empId).trim());
+        let adminRequests = [];
+        
+        if (['SUPER_ADMIN', 'HR', 'FINANCE'].includes(currentUser.role)) {
+          adminRequests = enrichedRequests;
+        } else if (currentUser.role === 'DEPT_HEAD') {
+          const allowedOutlets = (currentUser.user['OUTLET'] || "").split(',').map(s=>s.trim().toLowerCase()).filter(s=>s);
+          adminRequests = enrichedRequests.filter(req => {
+            const out = (req.Outlet || "").trim().toLowerCase();
+            return allowedOutlets.includes(out) || allowedOutlets.includes('all');
+          });
+        }
+
+        globalRequestsData = adminRequests;
+        renderHistoryTable(myHistory);
+
+        if(currentUser.role === 'FINANCE') {
+          populateOutletDropdowns();
+          renderFinanceTable(globalRequestsData);
+          renderCharts();
+        } else if(currentUser.role === 'HR' || currentUser.role === 'DEPT_HEAD' || currentUser.role === 'SUPER_ADMIN') {
+          populateOutletDropdowns();
+          renderAdminTable(globalRequestsData);
+          if(currentUser.role === 'HR' || currentUser.role === 'SUPER_ADMIN') {
+            renderInventoryTable(globalInventoryData);
             renderCharts();
-          } else if(currentUser.role === 'HR' || currentUser.role === 'DEPT_HEAD' || currentUser.role === 'SUPER_ADMIN') {
-            globalRequestsData = response.adminRequests;
-            populateOutletDropdowns();
-            renderAdminTable(globalRequestsData);
-            if(currentUser.role === 'HR' || currentUser.role === 'SUPER_ADMIN') {
-              globalInventoryData = response.inventory;
-              renderInventoryTable(globalInventoryData);
-              renderCharts();
-            }
-            if(currentUser.role === 'SUPER_ADMIN') {
-               renderFinanceTable(globalRequestsData);
-            }
+          }
+          if(currentUser.role === 'SUPER_ADMIN') {
+             renderFinanceTable(globalRequestsData);
           }
         }
-      }).getDashboardData(currentUser.role, currentUser.user['OUTLET'] || "N/A", currentUser.empId);
+      } catch (error) {
+         console.error("Dashboard Sync Error", error);
+      }
     }
 
     function renderCharts() {
@@ -690,7 +847,7 @@
 
       if ((currentUser.role === 'HR' || currentUser.role === 'SUPER_ADMIN') && document.getElementById('invMovementChart') && globalInventoryData) {
         const ctxInv = document.getElementById('invMovementChart').getContext('2d');
-
+        
         const filteredInv = globalInventoryData.filter(item => item.TOTAL_DELIVERED >= 1);
         let sortedInv = [...filteredInv].sort((a,b) => b.TOTAL_DELIVERED - a.TOTAL_DELIVERED);
 
@@ -795,13 +952,58 @@
       renderFinanceTable(filtered);
     }
 
-    function changeRequestStatus(reqId, newStatus) {
+    async function adjustInventoryForDelivery(reqId, multiplier) {
+      const reqItems = globalLineItems.filter(l => String(l.RequestID).trim() === String(reqId).trim());
+      for (let item of reqItems) {
+        const targetUniformName = String(item.Uniform).trim().toLowerCase();
+        const qty = Number(item.Quantity) || 0;
+        const uniformRow = globalInventoryRaw.find(u => String(u.UNIFORM).trim().toLowerCase() === targetUniformName);
+        
+        if (uniformRow) {
+          const currentInv = Number(uniformRow.INVENTORY) || 0;
+          const newInv = currentInv + (qty * multiplier);
+          await fetch(`${STEIN_API_BASE}/UNIFORM%20LIST`, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              condition: { UNIFORM: uniformRow.UNIFORM },
+              set: { INVENTORY: newInv }
+            })
+          });
+        }
+      }
+    }
+
+    async function changeRequestStatus(reqId, newStatus) {
       if(!confirm(`Mark this request as ${newStatus}?`)) return;
-      let actionUser = currentUser.user['COMPLETE NAME'] || currentUser.empId;
-      google.script.run.withSuccessHandler(res => {
-        if(res.success) { document.getElementById('searchDb').value = ''; fetchDashboardData(); }
-        else alert(res.message);
-      }).updateRequestStatus(reqId, newStatus, actionUser);
+      const actionUser = currentUser.user['COMPLETE NAME'] || currentUser.empId;
+      const timestampStr = new Date().toLocaleDateString() + " " + new Date().toLocaleTimeString();
+      const actionString = `${actionUser} (${timestampStr})`;
+
+      try {
+        const req = globalRequestsData.find(r => r.RequestID === reqId);
+        const oldStatus = req.Status;
+
+        if (oldStatus !== 'DELIVERED' && newStatus === 'DELIVERED') {
+          await adjustInventoryForDelivery(reqId, -1);
+        } else if (oldStatus === 'DELIVERED' && newStatus !== 'DELIVERED') {
+          await adjustInventoryForDelivery(reqId, 1);
+        }
+
+        await fetch(`${STEIN_API_BASE}/Requests`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            condition: { RequestID: reqId },
+            set: { Status: newStatus, ActionBy: actionString }
+          })
+        });
+
+        document.getElementById('searchDb').value = ''; 
+        fetchDashboardData();
+      } catch(e) {
+        alert("Network Error: Could not update status.");
+      }
     }
 
     function openEditModal(reqId) {
@@ -840,13 +1042,13 @@
       else { document.getElementById('editConsentBox').classList.add('hidden'); document.getElementById('editReqConsent').checked = false; }
     }
 
-    function saveEditedRequest() {
+    async function saveEditedRequest() {
       const reqId = document.getElementById('editReqId').value;
       const type = document.getElementById('editReqType').value;
       const consent = document.getElementById('editReqConsent').checked;
       const statusMsg = document.getElementById('editStatusMsg');
       const btn = document.getElementById('saveEditBtn');
-      let editUser = currentUser.user['COMPLETE NAME'] || currentUser.empId;
+      const editUser = currentUser.user['COMPLETE NAME'] || currentUser.empId;
       
       const itemRows = document.querySelectorAll('#editItemsContainer .item-row');
       const itemsToSubmit = [];
@@ -861,11 +1063,56 @@
       btn.innerText = "SAVING..."; btn.disabled = true;
       statusMsg.innerText = "UPDATING..."; statusMsg.className = "text-black font-bold tracking-wider uppercase";
       
-      google.script.run.withSuccessHandler(function(res) {
+      const costCat = determineCostCategory(type);
+      let totalCost = 0;
+      if (costCat !== 'ZERO_COST') {
+        itemsToSubmit.forEach(reqItem => {
+          const dbItem = globalInventoryRaw.find(i => String(i.UNIFORM).trim().toLowerCase() === String(reqItem.uniform).trim().toLowerCase());
+          if (dbItem) totalCost += (Number(dbItem.PRICE) * Number(reqItem.qty));
+        });
+      }
+
+      const timestampStr = new Date().toLocaleDateString() + " " + new Date().toLocaleTimeString();
+      const editString = `${editUser} (${timestampStr})`;
+
+      try {
+        // Update request row
+        await fetch(`${STEIN_API_BASE}/Requests`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            condition: { RequestID: reqId },
+            set: {
+              RequestType: type, TotalCost: totalCost, CostCategory: costCat,
+              PayrollDeductConsent: consent ? 'YES' : 'NO', EditedBy: editString
+            }
+          })
+        });
+
+        // Delete old line items via Stein DELETE endpoint
+        await fetch(`${STEIN_API_BASE}/LineItems`, {
+          method: 'DELETE',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ condition: { RequestID: reqId } })
+        });
+
+        // Add new line items
+        const lineItemPayload = itemsToSubmit.map(item => ({
+          RequestID: reqId, Uniform: item.uniform, Quantity: item.qty
+        }));
+        await fetch(`${STEIN_API_BASE}/LineItems`, {
+          method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(lineItemPayload)
+        });
+
         btn.innerText = "SAVE CHANGES"; btn.disabled = false;
-        if(res.success) { document.getElementById('searchDb').value = ''; closeEditModal(); fetchDashboardData(); }
-        else { statusMsg.innerText = res.message.toUpperCase(); statusMsg.className = "text-gray-600 font-bold italic"; }
-      }).editRequestByHR({ requestId: reqId, requestType: type, consent: consent, items: itemsToSubmit, editedBy: editUser });
+        document.getElementById('searchDb').value = ''; 
+        closeEditModal(); 
+        fetchDashboardData();
+      } catch (error) {
+        btn.innerText = "SAVE CHANGES"; btn.disabled = false;
+        statusMsg.innerText = "NETWORK ERROR. TRY AGAIN."; 
+        statusMsg.className = "text-gray-600 font-bold italic";
+      }
     }
 
     function openRestockModal(uniformName) {
@@ -880,9 +1127,9 @@
       document.getElementById('restockStatusMsg').innerText = '';
     }
 
-    function submitRestock() {
-      const uniform = document.getElementById('restockUniformId').value;
-      const qty = document.getElementById('restockQty').value;
+    async function submitRestock() {
+      const uniformCodeInput = document.getElementById('restockUniformId').value.trim().toLowerCase();
+      const qty = parseInt(document.getElementById('restockQty').value);
       const statusMsg = document.getElementById('restockStatusMsg');
       const btn = document.getElementById('saveRestockBtn');
       
@@ -891,11 +1138,35 @@
       btn.innerText = "SAVING..."; btn.disabled = true;
       statusMsg.innerText = "UPDATING DB..."; statusMsg.className = "text-black tracking-wider uppercase font-bold";
       
-      google.script.run.withSuccessHandler(function(res) {
+      try {
+        const uniformRow = globalInventoryRaw.find(u => String(u.UNIFORM).trim().toLowerCase() === uniformCodeInput);
+        if (!uniformRow) {
+           statusMsg.innerText = "UNIFORM NOT FOUND IN DB."; 
+           statusMsg.className = "text-gray-600 font-bold italic";
+           btn.innerText = "ADD STOCK"; btn.disabled = false;
+           return;
+        }
+
+        const currentStock = Number(uniformRow.INVENTORY) || 0;
+        const newStock = currentStock + qty;
+
+        await fetch(`${STEIN_API_BASE}/UNIFORM%20LIST`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            condition: { UNIFORM: uniformRow.UNIFORM }, // use original casing for condition
+            set: { INVENTORY: newStock }
+          })
+        });
+
         btn.innerText = "ADD STOCK"; btn.disabled = false;
-        if(res.success) { closeRestockModal(); fetchDashboardData(); }
-        else { statusMsg.innerText = res.message.toUpperCase(); statusMsg.className = "text-gray-600 font-bold italic"; }
-      }).restockUniform({ uniform: uniform, qty: qty });
+        closeRestockModal(); 
+        fetchDashboardData();
+      } catch (error) {
+        btn.innerText = "ADD STOCK"; btn.disabled = false;
+        statusMsg.innerText = "NETWORK ERROR. TRY AGAIN."; 
+        statusMsg.className = "text-gray-600 font-bold italic";
+      }
     }
 
     function openFinanceModal(reqId) {
@@ -910,7 +1181,7 @@
       document.getElementById('finStatusMsg').innerText = '';
     }
 
-    function submitFinanceTag() {
+    async function submitFinanceTag() {
       const reqId = document.getElementById('finReqId').value;
       const period = document.getElementById('finPeriod').value;
       const remarks = document.getElementById('finRemarks').value;
@@ -922,11 +1193,26 @@
       btn.innerText = "SAVING..."; btn.disabled = true;
       statusMsg.innerText = "TAGGING..."; statusMsg.className = "text-black tracking-wider uppercase font-bold";
       
-      google.script.run.withSuccessHandler(function(res) {
+      const timestampStr = new Date().toLocaleDateString() + " " + new Date().toLocaleTimeString();
+      const taggedString = `${currentUser.user['COMPLETE NAME']} (${timestampStr})`;
+
+      const payload = [{
+        RequestID: reqId, CapturedPeriod: period, Remarks: remarks, TaggedBy: taggedString
+      }];
+
+      try {
+        await fetch(`${STEIN_API_BASE}/FinanceTags`, {
+          method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload)
+        });
         btn.innerText = "ADD TAG"; btn.disabled = false;
-        if(res.success) { document.getElementById('searchFin').value = ''; closeFinanceModal(); fetchDashboardData(); }
-        else { statusMsg.innerText = res.message.toUpperCase(); statusMsg.className = "text-gray-600 font-bold italic"; }
-      }).addFinanceTag({ requestId: reqId, period: period, remarks: remarks, taggedBy: currentUser.user['COMPLETE NAME'] });
+        document.getElementById('searchFin').value = ''; 
+        closeFinanceModal(); 
+        fetchDashboardData();
+      } catch(e) {
+        btn.innerText = "ADD TAG"; btn.disabled = false;
+        statusMsg.innerText = "NETWORK ERROR. TRY AGAIN."; 
+        statusMsg.className = "text-gray-600 font-bold italic";
+      }
     }
 
     function getCostBadge(category) {
