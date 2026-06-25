@@ -359,7 +359,7 @@
 
   try {
     // 1. Fetch the data directly from your Google Sheet via Stein
-    const response = await fetch('https://api.steinhq.com/v1/storages/6a3c91a392b1163e970e764b/SUPER_ADMIN_ACCESS');
+    const response = await fetch('https://api.steinhq.com/v1/storages/6a3c91a392b1163e970e764b');
     const superAdmins = await response.json();
     
     // 2. Perform the logic in the browser
