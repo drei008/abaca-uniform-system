@@ -1065,7 +1065,7 @@
         if (item.AVAILABLE_STOCK > item.BASE_STOCK && item.BASE_STOCK > 0) {
           statusBadge = `<span class="bg-white border border-black text-black px-3 py-1 rounded-sm text-[10px] font-bold uppercase tracking-widest">OVERSTOCK</span>`;
         } else if (item.AVAILABLE_STOCK <= 5) {
-          statusBadge = `<span class="bg-black text-white px-3 py-1 rounded-sm text-[10px] font-bold uppercase tracking-widest animate-pulse">LOW STOCK</span>`;
+          statusBadge = `<span class="bg-black text-red px-3 py-1 rounded-sm text-[10px] font-bold uppercase tracking-widest animate-pulse">LOW STOCK</span>`;
           rowClass = "border-b border-gray-200 bg-gray-100";
         }
         
