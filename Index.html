@@ -1,2206 +1,1103 @@
 <!DOCTYPE html>
-
 <html lang="en">
-
 <head>
-
   <meta charset="UTF-8">
-
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-
   <title>Abaca Uniform Management</title>
-
   <script src="https://cdn.tailwindcss.com"></script>
-
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-
 </head>
-
 <body class="bg-gray-50 text-gray-900 font-sans min-h-screen">
-
   
-
   <div id="loginScreen" class="flex items-center justify-center min-h-screen">
-
     <div class="bg-white p-8 rounded-sm shadow-md border border-gray-200 w-full max-w-md">
-
       <div class="text-center mb-8">
-
         <h2 class="text-3xl font-extrabold text-black tracking-tight">ABACA GROUP</h2>
-
         <p class="text-gray-500 mt-2 text-sm uppercase tracking-widest">Uniform Management</p>
-
       </div>
-
       <div class="mb-4">
-
         <label class="block text-black text-sm font-bold mb-2">Employee ID</label>
-
         <input type="text" id="empIdInput" class="w-full px-4 py-3 border border-gray-300 rounded-sm focus:ring-1 focus:ring-black focus:border-black outline-none transition" placeholder="e.g. 11111">
-
       </div>
-
       <div class="mb-8">
-
         <label class="block text-black text-sm font-bold mb-2">Security PIN <span class="text-xs text-gray-400 font-normal ml-1">(Leave blank for standard)</span></label>
-
         <input type="password" id="pinInput" class="w-full px-4 py-3 border border-gray-300 rounded-sm focus:ring-1 focus:ring-black focus:border-black outline-none transition" placeholder="••••">
-
       </div>
-
       <button id="loginBtn" onclick="attemptLogin()" class="w-full bg-black hover:bg-gray-800 text-white font-bold py-3 px-4 rounded-sm transition tracking-wider uppercase text-sm">LOG IN</button>
-
       <p id="errorMessage" class="text-gray-500 font-semibold italic text-sm mt-4 text-center hidden"></p>
-
     </div>
-
   </div>
-
-
 
   <div id="dashboardScreen" class="hidden max-w-6xl mx-auto p-6">
-
     <div class="bg-white rounded-sm shadow-sm p-6 mb-6 flex flex-col md:flex-row justify-between items-center border-t-4 border-black">
-
       <div class="mb-4 md:mb-0">
-
         <h1 class="text-2xl font-bold text-black">Welcome, <span id="uiName" class="text-gray-600 font-medium"></span></h1>
-
         <p class="text-gray-500 mt-2 text-sm">
-
           <span class="font-bold bg-gray-200 text-black px-2 py-1 rounded-sm mr-2" id="uiRole"></span>
-
           Dept: <span id="uiDept" class="font-medium text-black"></span> | Outlet: <span id="uiOutlet" class="font-medium text-black"></span>
-
         </p>
-
       </div>
-
       <button onclick="logout()" class="bg-white hover:bg-gray-100 border border-gray-300 text-black px-6 py-2 rounded-sm font-bold transition text-sm uppercase tracking-wider">Log Out</button>
-
     </div>
-
-
 
     <div id="tabNavigation" class="flex space-x-4 border-b border-gray-300 mb-8 px-2 hidden">
-
       <button id="btnTab-request" onclick="switchTab('request')" class="py-2 px-4 text-black border-b-2 border-black font-bold focus:outline-none transition uppercase text-sm tracking-wider">Submit Request</button>
-
       <button id="btnTab-history" onclick="switchTab('history')" class="hidden py-2 px-4 text-gray-400 hover:text-black font-bold focus:outline-none transition uppercase text-sm tracking-wider">My Requests</button>
-
       <button id="btnTab-database" onclick="switchTab('database')" class="hidden py-2 px-4 text-gray-400 hover:text-black font-bold focus:outline-none transition uppercase text-sm tracking-wider">Master Database</button>
-
       <button id="btnTab-inventory" onclick="switchTab('inventory')" class="hidden py-2 px-4 text-gray-400 hover:text-black font-bold focus:outline-none transition uppercase text-sm tracking-wider">Live Inventory</button>
-
       <button id="btnTab-finance" onclick="switchTab('finance')" class="hidden py-2 px-4 text-gray-400 hover:text-black font-bold focus:outline-none transition uppercase text-sm tracking-wider">Finance Ledger</button>
-
     </div>
-
-
 
     <div id="section-request" class="bg-white rounded-sm shadow-sm p-8 border border-gray-200 hidden">
-
       <h2 class="text-lg font-bold text-black mb-6 border-b border-gray-200 pb-3 uppercase tracking-wider">Submit Uniform Request</h2>
-
       
-
       <div id="hrProxySection" class="mb-8 hidden bg-gray-50 p-5 rounded-sm border border-gray-200">
-
         <label class="flex items-center space-x-3 font-bold text-black mb-4 cursor-pointer">
-
           <input type="checkbox" id="isProxyRequest" onchange="toggleProxyMode()" class="w-5 h-5 text-black border-gray-300 rounded-sm focus:ring-black">
-
           <span>Request on behalf of another employee</span>
-
         </label>
-
         <div id="proxyFields" class="flex flex-col md:flex-row gap-6 opacity-50 pointer-events-none transition-opacity duration-200">
-
           <div class="flex-1">
-
             <label class="block text-black text-xs font-bold uppercase tracking-wider mb-2">Target Employee ID</label>
-
             <input type="text" id="proxyEmpId" placeholder="e.g. 11111" class="w-full px-4 py-2 border border-gray-300 rounded-sm bg-white focus:ring-1 focus:ring-black focus:border-black outline-none" disabled>
-
           </div>
-
           <div class="flex-1">
-
             <label class="block text-black text-xs font-bold uppercase tracking-wider mb-2">Proxy Request Type</label>
-
             <select id="proxyReqType" onchange="toggleConsent()" class="w-full px-4 py-2 border border-gray-300 rounded-sm bg-white focus:ring-1 focus:ring-black focus:border-black outline-none" disabled>
-
               <option value="" disabled selected>Select reason...</option>
-
               <option value="Onboarding (New Hire)">Onboarding (New Hire)</option>
-
               <option value="Promotion">Promotion</option>
-
               <option value="Lateral Transfer">Lateral Transfer</option>
-
               <option value="ATD (Wear & Tear)">ATD (Wear & Tear)</option>
-
               <option value="Work Anniversary">Work Anniversary</option>
-
               <option value="Calamity Replacement">Calamity Replacement</option>
-
               <option value="Maternity">Maternity</option>
-
               <option value="Workplace Incident">Workplace Incident</option>
-
               <option value="Size Swap (Return in 1-2 Days)">Size Swap (Return in 1-2 Days)</option>
-
               <option value="Offboarding/Clearance">Offboarding/Clearance</option>
-
             </select>
-
           </div>
-
         </div>
-
       </div>
-
-
 
       <div class="mb-8">
-
         <label class="block text-black text-xs font-bold uppercase tracking-wider mb-2">Request Type</label>
-
         <select id="reqType" onchange="toggleConsent()" class="w-full md:w-1/2 px-4 py-2 border border-gray-300 rounded-sm bg-white focus:ring-1 focus:ring-black focus:border-black outline-none transition-colors">
-
           <option value="" disabled selected>Select reason...</option>
-
           <option value="Promotion">Promotion</option>
-
           <option value="Lateral Transfer">Lateral Transfer</option>
-
           <option value="ATD (Wear & Tear)">ATD (Wear & Tear)</option>
-
           <option value="Work Anniversary">Work Anniversary</option>
-
           <option value="Calamity Replacement">Calamity Replacement</option>
-
           <option value="Maternity">Maternity</option>
-
           <option value="Workplace Incident">Workplace Incident</option>
-
           <option value="Offboarding/Clearance">Offboarding/Clearance (Deduction)</option>
-
         </select>
-
       </div>
-
-
 
       <div class="mb-8 border-t border-gray-200 pt-6">
-
         <label class="block text-black text-xs font-bold uppercase tracking-wider mb-4">Uniform Items Requested</label>
-
         <div id="itemsContainer" class="space-y-4"></div>
-
         <button type="button" onclick="addItemRow('itemsContainer')" class="mt-5 flex items-center text-xs text-black font-bold hover:text-gray-500 transition uppercase tracking-wider border border-gray-300 px-4 py-2 rounded-sm bg-gray-50 hover:bg-gray-100">
-
           <span class="text-base mr-2 leading-none">+</span> Add Another Item
-
         </button>
-
       </div>
-
-
 
       <div id="consentBox" class="hidden mt-8 bg-gray-50 border border-gray-300 p-5 rounded-sm">
-
         <label class="flex items-center space-x-3 cursor-pointer">
-
           <input type="checkbox" id="reqConsent" class="w-5 h-5 text-black border-gray-400 rounded-sm focus:ring-black">
-
           <span class="text-black font-bold text-sm">I authorize the deduction of the total cost of this item from my payroll/final pay.</span>
-
         </label>
-
       </div>
-
-
 
       <div class="mt-10 flex items-center space-x-6">
-
         <button id="submitReqBtn" onclick="processRequest()" class="bg-black hover:bg-gray-800 text-white font-bold py-3 px-8 rounded-sm transition uppercase text-sm tracking-wider">Submit Request</button>
-
         <span id="reqStatusMsg" class="font-bold text-sm italic"></span>
-
       </div>
-
     </div>
-
-
 
     <div id="section-history" class="bg-white rounded-sm shadow-sm p-6 border border-gray-200 hidden">
-
       <h2 class="text-lg font-bold text-black mb-6 border-b border-gray-200 pb-3 uppercase tracking-wider">My Personal Request History</h2>
-
       <div class="overflow-x-auto">
-
         <table class="w-full text-left border-collapse">
-
           <thead>
-
             <tr class="bg-gray-100 text-black uppercase text-[10px] tracking-wider border-b border-gray-300">
-
               <th class="p-3 border-r border-gray-200">Date</th>
-
               <th class="p-3 border-r border-gray-200">Type</th>
-
               <th class="p-3 border-r border-gray-200">Items Requested</th>
-
               <th class="p-3 border-r border-gray-200">Cost Tag</th>
-
               <th class="p-3 border-r border-gray-200">Total (₱)</th>
-
               <th class="p-3">Status</th>
-
             </tr>
-
           </thead>
-
           <tbody id="historyTableBody" class="text-sm"></tbody>
-
         </table>
-
       </div>
-
     </div>
-
-
 
     <div id="section-database" class="bg-white rounded-sm shadow-sm p-6 border border-gray-200 hidden">
-
       <div class="flex justify-between items-center mb-6 border-b border-gray-200 pb-3">
-
         <h2 class="text-lg font-bold text-black uppercase tracking-wider">Master Requests Database</h2>
-
         <button onclick="exportCSV()" class="bg-white border border-black hover:bg-gray-100 text-black font-bold py-1 px-4 rounded-sm transition text-xs uppercase tracking-wider">📥 Export CSV</button>
-
       </div>
-
       
-
       <div id="hrChartContainer" class="mb-8 bg-gray-50 p-6 rounded-sm border border-gray-200 hidden">
-
         <h3 class="text-center font-bold text-black text-sm uppercase tracking-widest mb-4">Request Status Distribution</h3>
-
         <div class="w-full max-w-xs mx-auto">
-
           <canvas id="hrPieChart"></canvas>
-
         </div>
-
       </div>
-
-
 
       <div class="flex flex-col md:flex-row gap-4 mb-6 bg-gray-50 p-5 rounded-sm border border-gray-200">
-
         <div class="flex-1">
-
           <label class="text-[10px] font-bold text-black uppercase tracking-wider">Search</label>
-
           <input type="text" id="searchDb" onkeyup="applyFilters()" placeholder="Search Name, Emp ID, or Request ID..." class="w-full px-3 py-2 mt-2 border border-gray-300 rounded-sm focus:ring-1 focus:ring-black focus:border-black outline-none">
-
         </div>
-
         <div class="md:w-1/3">
-
           <label class="text-[10px] font-bold text-black uppercase tracking-wider">Filter by Outlet</label>
-
           <select id="filterOutlet" onchange="applyFilters()" class="w-full px-3 py-2 mt-2 border border-gray-300 rounded-sm focus:ring-1 focus:ring-black focus:border-black outline-none">
-
             <option value="ALL">All Outlets</option>
-
           </select>
-
         </div>
-
       </div>
-
-
 
       <div class="overflow-x-auto">
-
         <table class="w-full text-left border-collapse">
-
           <thead>
-
             <tr class="bg-gray-100 text-black uppercase text-[10px] tracking-wider border-b border-gray-300">
-
               <th class="p-3 border-r border-gray-200">Date</th>
-
               <th class="p-3 border-r border-gray-200">ID & Name</th>
-
               <th class="p-3 border-r border-gray-200">Outlet</th>
-
               <th class="p-3 border-r border-gray-200">Items Requested</th>
-
               <th class="p-3 border-r border-gray-200">Total (₱)</th>
-
               <th class="p-3 border-r border-gray-200 text-center">Status</th>
-
               <th class="p-3 border-r border-gray-200">Finance Processing</th>
-
               <th class="p-3 text-center">Actions</th>
-
             </tr>
-
           </thead>
-
           <tbody id="adminTableBody" class="text-sm"></tbody>
-
         </table>
-
       </div>
-
     </div>
-
-
 
     <div id="section-inventory" class="bg-white rounded-sm shadow-sm p-6 border border-gray-200 hidden">
-
       <h2 class="text-lg font-bold text-black mb-6 border-b border-gray-200 pb-3 uppercase tracking-wider">Live Inventory Tracker</h2>
-
       
-
       <div id="invChartContainer" class="mb-8 bg-gray-50 p-6 rounded-sm border border-gray-200">
-
-        <h3 class="text-center font-bold text-black text-sm uppercase tracking-widest mb-4">Uniform Movement (Total Delivered Items)</h3>
-
+        <h3 class="text-center font-bold text-black text-sm uppercase tracking-widest mb-4">Uniform Movement (Total Released Items)</h3>
         <div class="w-full max-w-md mx-auto h-64">
-
           <canvas id="invMovementChart"></canvas>
-
         </div>
-
       </div>
-
-
 
       <div class="overflow-x-auto">
-
         <table class="w-full text-left border-collapse">
-
           <thead>
-
             <tr class="bg-black text-white uppercase text-[10px] tracking-wider">
-
               <th class="p-3 border-r border-gray-700">Uniform Item</th>
-
               <th class="p-3 border-r border-gray-700 text-center">Base Target Stock</th>
-
-              <th class="p-3 border-r border-gray-700 text-center text-gray-400">Pending Delivery</th>
-
+              <th class="p-3 border-r border-gray-700 text-center text-gray-400">Pending Release</th>
               <th class="p-3 border-r border-gray-700 text-center text-lg">On-Hand Stock</th>
-
               <th class="p-3 border-r border-gray-700 text-center">Status</th>
-
               <th class="p-3 text-center">Action</th>
-
             </tr>
-
           </thead>
-
           <tbody id="inventoryTableBody" class="text-sm"></tbody>
-
         </table>
-
       </div>
-
     </div>
-
-
 
     <div id="section-finance" class="bg-white rounded-sm shadow-sm p-6 border border-gray-200 hidden">
-
       <h2 class="text-lg font-bold text-black mb-6 border-b border-gray-200 pb-3 uppercase tracking-wider">Finance: Payroll & P&L Ledger</h2>
-
       
-
       <div id="finChartContainer" class="mb-8 bg-gray-50 p-6 rounded-sm border border-gray-200 hidden">
-
         <h3 class="text-center font-bold text-black text-sm uppercase tracking-widest mb-4">Company Expenses by Outlet (₱)</h3>
-
         <div class="w-full max-w-2xl mx-auto h-64">
-
           <canvas id="finBarChart"></canvas>
-
         </div>
-
       </div>
-
-
 
       <div class="flex flex-col md:flex-row gap-4 mb-6 bg-gray-50 p-5 rounded-sm border border-gray-200">
-
         <div class="flex-1">
-
           <label class="text-[10px] font-bold text-black uppercase tracking-wider">Search</label>
-
           <input type="text" id="searchFin" onkeyup="applyFiltersFinance()" placeholder="Search Name, Emp ID, or Request ID..." class="w-full px-3 py-2 mt-2 border border-gray-300 rounded-sm focus:ring-1 focus:ring-black focus:border-black outline-none">
-
         </div>
-
         <div class="md:w-1/3">
-
           <label class="text-[10px] font-bold text-black uppercase tracking-wider">Filter by Outlet</label>
-
           <select id="filterOutletFin" onchange="applyFiltersFinance()" class="w-full px-3 py-2 mt-2 border border-gray-300 rounded-sm focus:ring-1 focus:ring-black focus:border-black outline-none">
-
             <option value="ALL">All Outlets</option>
-
           </select>
-
         </div>
-
       </div>
-
-
 
       <div class="overflow-x-auto">
-
         <table class="w-full text-left border-collapse">
-
           <thead>
-
             <tr class="bg-gray-100 text-black uppercase text-[10px] tracking-wider border-b border-gray-300">
-
               <th class="p-3 border-r border-gray-200">Date</th>
-
               <th class="p-3 border-r border-gray-200">ID & Name</th>
-
               <th class="p-3 border-r border-gray-200">Items Requested</th>
-
               <th class="p-3 border-r border-gray-200">Cost Tag</th>
-
               <th class="p-3 border-r border-gray-200">Total (₱)</th>
-
               <th class="p-3 border-r border-gray-200 text-center">Status</th>
-
               <th class="p-3 border-r border-gray-200">Finance Tags</th>
-
               <th class="p-3 text-center">Action</th>
-
             </tr>
-
           </thead>
-
           <tbody id="financeTableBody" class="text-sm"></tbody>
-
         </table>
-
       </div>
-
     </div>
-
   </div>
-
-
 
   <div id="editModal" class="fixed inset-0 bg-gray-900 bg-opacity-75 hidden flex items-center justify-center z-50">
-
     <div class="bg-white p-8 rounded-sm shadow-2xl w-full max-w-3xl max-h-[90vh] overflow-y-auto">
-
       <div class="flex justify-between items-center mb-6 border-b border-gray-200 pb-3">
-
         <h2 class="text-xl font-bold text-black uppercase tracking-wider">Edit Request: <span id="editReqIdLabel" class="text-gray-500 text-sm font-normal ml-2"></span></h2>
-
         <button onclick="closeEditModal()" class="text-gray-400 hover:text-black text-2xl font-bold transition">&times;</button>
-
       </div>
-
       <input type="hidden" id="editReqId">
-
       <div class="mb-6">
-
         <label class="block text-black text-xs font-bold uppercase tracking-wider mb-2">Request Type</label>
-
         <select id="editReqType" onchange="toggleEditConsent()" class="w-full px-4 py-2 border border-gray-300 rounded-sm bg-white focus:ring-1 focus:ring-black focus:border-black outline-none">
-
           <option value="Onboarding (New Hire)">Onboarding (New Hire)</option>
-
           <option value="Promotion">Promotion</option>
-
           <option value="Lateral Transfer">Lateral Transfer</option>
-
           <option value="ATD (Wear & Tear)">ATD (Wear & Tear)</option>
-
           <option value="Work Anniversary">Work Anniversary</option>
-
           <option value="Calamity Replacement">Calamity Replacement</option>
-
           <option value="Maternity">Maternity</option>
-
           <option value="Workplace Incident">Workplace Incident</option>
-
           <option value="Offboarding/Clearance">Offboarding/Clearance (Deduction)</option>
-
           <option value="Size Swap (Return in 1-2 Days)">Size Swap (Return in 1-2 Days)</option>
-
         </select>
-
       </div>
-
       <div class="mb-6 border-t border-gray-200 pt-5">
-
         <label class="block text-black text-xs font-bold uppercase tracking-wider mb-4">Modify Items</label>
-
         <div id="editItemsContainer" class="space-y-4"></div>
-
         <button type="button" onclick="addItemRow('editItemsContainer', '', 1, true)" class="mt-5 flex items-center text-xs text-black font-bold hover:text-gray-500 transition uppercase tracking-wider border border-gray-300 px-4 py-2 rounded-sm bg-gray-50 hover:bg-gray-100">
-
           <span class="text-base mr-2 leading-none">+</span> Add Item
-
         </button>
-
       </div>
-
       <div id="editConsentBox" class="hidden mt-6 bg-gray-50 border border-gray-300 p-5 rounded-sm">
-
         <label class="flex items-center space-x-3 cursor-pointer">
-
           <input type="checkbox" id="editReqConsent" class="w-5 h-5 text-black border-gray-400 rounded-sm focus:ring-black">
-
           <span class="text-black font-bold text-sm">Payroll/Final Pay Deduction Consent Verified</span>
-
         </label>
-
       </div>
-
       <div class="mt-8 flex justify-end space-x-4 border-t border-gray-200 pt-6">
-
         <span id="editStatusMsg" class="font-bold text-sm italic self-center mr-4"></span>
-
         <button onclick="closeEditModal()" class="px-6 py-2 bg-white border border-gray-300 hover:bg-gray-100 text-black font-bold rounded-sm transition text-xs uppercase tracking-wider">Cancel</button>
-
         <button id="saveEditBtn" onclick="saveEditedRequest()" class="px-6 py-2 bg-black hover:bg-gray-800 text-white font-bold rounded-sm transition shadow-sm text-xs uppercase tracking-wider">Save Changes</button>
-
       </div>
-
     </div>
-
   </div>
-
-
 
   <div id="financeModal" class="fixed inset-0 bg-gray-900 bg-opacity-75 hidden flex items-center justify-center z-50">
-
     <div class="bg-white p-8 rounded-sm shadow-2xl w-full max-w-md">
-
       <div class="flex justify-between items-center mb-6 border-b border-gray-200 pb-3">
-
         <h2 class="text-xl font-bold text-black uppercase tracking-wider">Tag Deduction / Expense</h2>
-
         <button onclick="closeFinanceModal()" class="text-gray-400 hover:text-black text-2xl font-bold transition">&times;</button>
-
       </div>
-
       <input type="hidden" id="finReqId">
-
       <div class="mb-5">
-
         <label class="block text-black text-xs font-bold uppercase tracking-wider mb-2">Captured Period / Date</label>
-
         <input type="text" id="finPeriod" placeholder="e.g. June 16-30 Payroll" class="w-full px-4 py-2 border border-gray-300 rounded-sm focus:ring-1 focus:ring-black focus:border-black outline-none">
-
       </div>
-
       <div class="mb-8">
-
         <label class="block text-black text-xs font-bold uppercase tracking-wider mb-2">Remarks (Optional)</label>
-
         <input type="text" id="finRemarks" placeholder="e.g. 50% deducted" class="w-full px-4 py-2 border border-gray-300 rounded-sm focus:ring-1 focus:ring-black focus:border-black outline-none">
-
       </div>
-
       <div class="flex justify-end space-x-4 border-t border-gray-200 pt-6">
-
         <span id="finStatusMsg" class="font-bold text-sm italic self-center mr-4"></span>
-
         <button onclick="closeFinanceModal()" class="px-6 py-2 bg-white border border-gray-300 hover:bg-gray-100 text-black font-bold rounded-sm transition text-xs uppercase tracking-wider">Cancel</button>
-
         <button id="saveFinBtn" onclick="submitFinanceTag()" class="px-6 py-2 bg-black hover:bg-gray-800 text-white font-bold rounded-sm transition shadow-sm text-xs uppercase tracking-wider">Add Tag</button>
-
       </div>
-
     </div>
-
   </div>
-
-
 
   <div id="restockModal" class="fixed inset-0 bg-gray-900 bg-opacity-75 hidden flex items-center justify-center z-50">
-
     <div class="bg-white p-8 rounded-sm shadow-2xl w-full max-w-md">
-
       <div class="flex justify-between items-center mb-6 border-b border-gray-200 pb-3">
-
         <h2 class="text-xl font-bold text-black uppercase tracking-wider">Restock Inventory</h2>
-
         <button onclick="closeRestockModal()" class="text-gray-400 hover:text-black text-2xl font-bold transition">&times;</button>
-
       </div>
-
       <p class="text-sm font-bold text-gray-500 mb-6 uppercase tracking-wider" id="restockItemName"></p>
-
       <input type="hidden" id="restockUniformId">
-
       
-
       <div class="mb-8">
-
         <label class="block text-black text-xs font-bold uppercase tracking-wider mb-2">Quantity Arrived</label>
-
         <input type="number" id="restockQty" min="1" placeholder="e.g. 50" class="w-full px-4 py-2 border border-gray-300 rounded-sm focus:ring-1 focus:ring-black focus:border-black outline-none text-center text-lg font-bold">
-
       </div>
-
       
-
       <div class="flex justify-end space-x-4 border-t border-gray-200 pt-6">
-
         <span id="restockStatusMsg" class="font-bold text-sm italic self-center mr-4"></span>
-
         <button onclick="closeRestockModal()" class="px-6 py-2 bg-white border border-gray-300 hover:bg-gray-100 text-black font-bold rounded-sm transition text-xs uppercase tracking-wider">Cancel</button>
-
         <button id="saveRestockBtn" onclick="submitRestock()" class="px-6 py-2 bg-black hover:bg-gray-800 text-white font-bold rounded-sm transition shadow-sm text-xs uppercase tracking-wider">Add Stock</button>
-
       </div>
-
     </div>
-
   </div>
 
-
-
   <script>
-
     // =========================================================================
-
     // THE API BRIDGE
-
     // =========================================================================
-
     const GAS_API_URL = "https://script.google.com/macros/s/AKfycby0vzc8l2S4NZ9eKCdzxixOmsmvygJhy4WHvsMDynpDij2esh4Cf9-FK-JCvwP4-sjW7w/exec";
-
     
-
     let currentUser = null;
-
     let globalRequestsData = [];
-
     let globalUniformsList = [];
-
     let globalInventoryData = [];
-
     
-
     let hrPieChartObj = null;
-
     let finBarChartObj = null;
-
     let invMovementChartObj = null;
 
-
-
     // A unified helper to send requests to your Google Apps Script backend
-
     async function gasApiCall(actionName, payloadData) {
-
       try {
-
         const response = await fetch(GAS_API_URL, {
-
           method: 'POST',
-
           headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-
           body: JSON.stringify({ action: actionName, payload: payloadData })
-
         });
-
         return await response.json();
-
       } catch (error) {
-
         console.error("API Call Failed:", error);
-
         return { success: false, message: "Network Error: Could not connect to database." };
-
       }
-
     }
 
-
-
     // =========================================================================
-
     // AUTHENTICATION
-
     // =========================================================================
-
     async function attemptLogin() {
-
       const empId = document.getElementById('empIdInput').value.trim();
-
       const pin = document.getElementById('pinInput').value.trim();
-
       
-
       if (!empId) { showError("Please enter your Employee ID."); return; }
-
       
-
       document.getElementById('loginBtn').innerText = "AUTHENTICATING...";
-
       document.getElementById('loginBtn').disabled = true;
-
       document.getElementById('errorMessage').classList.add('hidden');
 
-
-
       const response = await gasApiCall('login', { empId: empId, pin: pin });
-
       
-
       if (response.success) {
-
         handleLoginResponse(response);
-
       } else {
-
         showError(response.message);
-
         document.getElementById('loginBtn').innerText = "LOG IN";
-
         document.getElementById('loginBtn').disabled = false;
-
       }
-
     }
-
-
 
     function handleLoginResponse(response) {
-
       document.getElementById('loginBtn').innerText = "LOG IN";
-
       document.getElementById('loginBtn').disabled = false;
-
       
-
       currentUser = response;
-
       document.getElementById('uiName').innerText = response.user['COMPLETE NAME'] || "Name Unknown";
-
       document.getElementById('uiRole').innerText = response.role;
-
       document.getElementById('uiDept').innerText = response.user['DEPARTMENT'] || "N/A";
-
       document.getElementById('uiOutlet').innerText = response.user['OUTLET'] || "N/A";
-
       
-
       resetFormUI();
-
       if (response.role === 'HR' || response.role === 'SUPER_ADMIN') {
-
         document.getElementById('hrProxySection').classList.remove('hidden');
-
       } else {
-
         document.getElementById('hrProxySection').classList.add('hidden');
-
       }
-
       
-
       globalUniformsList = response.uniforms || [];
-
       document.getElementById('itemsContainer').innerHTML = '';
-
       addItemRow('itemsContainer');
-
       
-
       document.getElementById('tabNavigation').classList.remove('hidden');
-
       document.getElementById('btnTab-history').classList.remove('hidden');
-
       
-
       if (response.role === 'DEPT_HEAD') {
-
         document.getElementById('btnTab-database').classList.remove('hidden');
-
       } else if (response.role === 'HR') {
-
         document.getElementById('btnTab-database').classList.remove('hidden');
-
         document.getElementById('btnTab-inventory').classList.remove('hidden');
-
         document.getElementById('hrChartContainer').classList.remove('hidden');
-
       } else if (response.role === 'FINANCE') {
-
         document.getElementById('btnTab-finance').classList.remove('hidden');
-
         document.getElementById('finChartContainer').classList.remove('hidden');
-
       } else if (response.role === 'SUPER_ADMIN') {
-
         document.getElementById('btnTab-database').classList.remove('hidden');
-
         document.getElementById('btnTab-inventory').classList.remove('hidden');
-
         document.getElementById('btnTab-finance').classList.remove('hidden');
-
         document.getElementById('hrChartContainer').classList.remove('hidden');
-
         document.getElementById('finChartContainer').classList.remove('hidden');
-
       }
-
       
-
       fetchDashboardData();
-
       switchTab('request');
-
       document.getElementById('loginScreen').classList.add('hidden');
-
       document.getElementById('dashboardScreen').classList.remove('hidden');
-
     }
-
-
 
     function showError(msg) {
-
       document.getElementById('errorMessage').innerText = msg;
-
       document.getElementById('errorMessage').classList.remove('hidden');
-
     }
-
-
 
     function logout() {
-
       currentUser = null;
-
       globalRequestsData = [];
-
       globalUniformsList = [];
-
       globalInventoryData = [];
-
       document.getElementById('empIdInput').value = "";
-
       document.getElementById('pinInput').value = "";
-
       document.getElementById('proxyEmpId').value = "";
-
       document.getElementById('dashboardScreen').classList.add('hidden');
-
       document.getElementById('loginScreen').classList.remove('hidden');
-
       document.getElementById('tabNavigation').classList.add('hidden');
-
       ['history', 'database', 'inventory', 'finance'].forEach(t => document.getElementById('btnTab-' + t).classList.add('hidden'));
-
       resetFormUI();
-
       
-
       if(hrPieChartObj) hrPieChartObj.destroy();
-
       if(finBarChartObj) finBarChartObj.destroy();
-
       if(invMovementChartObj) invMovementChartObj.destroy();
-
     }
 
-
-
     // =========================================================================
-
     // UI NAVIGATION & FORMS
-
     // =========================================================================
-
     function resetFormUI() {
-
       document.getElementById('reqStatusMsg').innerText = "";
-
       document.getElementById('reqType').value = "";
-
       document.getElementById('isProxyRequest').checked = false;
-
       toggleProxyMode();
-
       document.getElementById('consentBox').classList.add('hidden');
-
       document.getElementById('reqConsent').checked = false;
-
     }
-
-
 
     function switchTab(tabId) {
-
       ['request', 'history', 'database', 'inventory', 'finance'].forEach(t => document.getElementById('section-' + t).classList.add('hidden'));
-
       ['request', 'history', 'database', 'inventory', 'finance'].forEach(t => {
-
         const btn = document.getElementById('btnTab-' + t);
-
         if(btn) {
-
           btn.classList.remove('text-black', 'border-b-2', 'border-black');
-
           btn.classList.add('text-gray-400');
-
         }
-
       });
-
       document.getElementById('section-' + tabId).classList.remove('hidden');
-
       const activeBtn = document.getElementById('btnTab-' + tabId);
-
       if(activeBtn) {
-
         activeBtn.classList.remove('text-gray-400');
-
         activeBtn.classList.add('text-black', 'border-b-2', 'border-black');
-
       }
-
     }
-
-
 
     function toggleProxyMode() {
-
       const isProxy = document.getElementById('isProxyRequest') ? document.getElementById('isProxyRequest').checked : false;
-
       const proxyFields = document.getElementById('proxyFields');
-
       const proxyEmpId = document.getElementById('proxyEmpId');
-
       const proxyReqType = document.getElementById('proxyReqType');
-
       const regReqType = document.getElementById('reqType');
-
       
-
       if (isProxy) {
-
         proxyFields.classList.remove('opacity-50', 'pointer-events-none');
-
         proxyEmpId.disabled = false;
-
         proxyReqType.disabled = false;
-
         regReqType.disabled = true;
-
         regReqType.classList.add('bg-gray-100', 'text-gray-400');
-
         regReqType.value = "";
-
       } else {
-
         proxyFields.classList.add('opacity-50', 'pointer-events-none');
-
         proxyEmpId.disabled = true;
-
         proxyReqType.disabled = true;
-
         proxyEmpId.value = "";
-
         proxyReqType.value = "";
-
         regReqType.disabled = false;
-
         regReqType.classList.remove('bg-gray-100', 'text-gray-400');
-
       }
-
       toggleConsent();
-
     }
-
-
 
     function toggleConsent() {
-
       const isProxy = document.getElementById('isProxyRequest') ? document.getElementById('isProxyRequest').checked : false;
-
       let activeType = isProxy ? document.getElementById('proxyReqType').value : document.getElementById('reqType').value;
-
       if (activeType === 'ATD (Wear & Tear)' || activeType === 'Maternity' || activeType === 'Offboarding/Clearance') {
-
         document.getElementById('consentBox').classList.remove('hidden');
-
       } else {
-
         document.getElementById('consentBox').classList.add('hidden');
-
         document.getElementById('reqConsent').checked = false;
-
       }
-
     }
-
-
 
     function getAllowedUniforms(userRecord, forceAll = false) {
-
       if (forceAll || !userRecord) return globalUniformsList;
-
       
-
       const dept = (userRecord['DEPARTMENT'] || '').toUpperCase();
-
       const rank = (userRecord['RANK'] || '').toUpperCase();
-
       const outlet = (userRecord['OUTLET'] || '').toUpperCase();
-
       let allowed = [];
 
-
-
       const isSupervisorOrAbove = rank.includes('SUPERVISOR') || rank.includes('MANAGER') || rank.includes('HEAD');
-
       const isRankAndFile = !isSupervisorOrAbove;
 
-
-
       if (dept.includes('BOH')) {
-
         if (isSupervisorOrAbove) allowed = ['Chef Jacket', 'Half Black Apron', 'Cap'];
-
         else allowed = ['Chef Jacket', 'Cap'];
-
       } else if (dept.includes('FOH')) {
-
         if (isRankAndFile) {
-
           if (['PHT', 'CMK', 'TCS-BASE'].includes(outlet)) allowed = ['Black T-shirt', 'Full Black Apron', 'Shoes'];
-
           else if (['ABC'].includes(outlet)) allowed = ['Black T-shirt', 'Full Denim Apron', 'Shoes'];
-
         } else {
-
           if (['ABC', 'TCS-BASE'].includes(outlet)) allowed.push('White Long Sleeve', 'Full Denim Apron', 'Shoes');
-
           if (['TCS-REEF'].includes(outlet)) allowed.push('White Long Sleeve');
-
           if (['PHT', 'MAYA', 'ABC', 'TCS-BASE', 'TAV'].includes(outlet)) allowed.push('Gray Long Sleeve');
-
         }
-
       }
-
-
 
       if (allowed.length === 0) return globalUniformsList;
-
       return globalUniformsList.filter(u => allowed.some(a => u.toUpperCase().includes(a.toUpperCase())));
-
     }
-
-
 
     function addItemRow(containerId, defaultItem = "", defaultQty = 1, forceAllUniforms = false) {
-
       const container = document.getElementById(containerId);
-
       const row = document.createElement('div');
-
       row.className = 'flex items-center space-x-3 item-row';
-
       
-
       const isProxy = document.getElementById('isProxyRequest') ? document.getElementById('isProxyRequest').checked : false;
-
       const showAll = forceAllUniforms || (isProxy && (currentUser.role === 'HR' || currentUser.role === 'SUPER_ADMIN'));
-
       const allowedList = getAllowedUniforms(currentUser.user, showAll);
 
-
-
       let options = '<option value="" disabled selected>Select uniform piece...</option>';
-
       allowedList.forEach(u => options += `<option value="${u}" ${u === defaultItem ? 'selected' : ''}>${u}</option>`);
-
       
-
       row.innerHTML = `
-
         <select class="req-item-select flex-1 px-4 py-2 border border-gray-300 rounded-sm bg-white focus:ring-1 focus:ring-black focus:border-black outline-none">${options}</select>
-
         <input type="number" class="req-item-qty w-24 px-4 py-2 border border-gray-300 rounded-sm bg-white focus:ring-1 focus:ring-black focus:border-black outline-none text-center font-bold" min="1" max="10" value="${defaultQty}">
-
         <button type="button" onclick="this.parentElement.remove()" class="text-gray-400 hover:text-black font-bold px-2 text-2xl transition">&times;</button>
-
       `;
-
       container.appendChild(row);
-
     }
 
-
-
     // =========================================================================
-
     // BACKEND ACTIONS
-
     // =========================================================================
-
     async function processRequest() {
-
       const isProxy = document.getElementById('isProxyRequest') ? document.getElementById('isProxyRequest').checked : false;
-
       let type = "";
-
       let targetEmpId = currentUser.empId;
-
       let initiatorName = currentUser.user['COMPLETE NAME'] || currentUser.empId;
-
       const statusMsg = document.getElementById('reqStatusMsg');
-
       
-
       if (isProxy && (currentUser.role === 'HR' || currentUser.role === 'SUPER_ADMIN')) {
-
         targetEmpId = document.getElementById('proxyEmpId').value.trim();
-
         type = document.getElementById('proxyReqType').value;
-
         if (!targetEmpId) {
-
           statusMsg.innerText = "Please enter the Target Employee ID.";
-
           statusMsg.className = "text-gray-600 font-bold text-sm italic";
-
           return;
-
         }
-
         initiatorName = initiatorName + " (Proxy)";
-
       } else {
-
         type = document.getElementById('reqType').value;
-
       }
-
       
-
       const consent = document.getElementById('reqConsent').checked;
-
       const btn = document.getElementById('submitReqBtn');
-
       
-
       const itemRows = document.querySelectorAll('#itemsContainer .item-row');
-
       const itemsToSubmit = [];
-
       itemRows.forEach(row => {
-
         const item = row.querySelector('.req-item-select').value;
-
         const qty = row.querySelector('.req-item-qty').value;
-
         if (item && qty > 0) itemsToSubmit.push({ uniform: item, qty: qty });
-
       });
 
-
-
       if (!type) { statusMsg.innerText = "Please select a Request Type."; statusMsg.className = "text-gray-600 font-bold text-sm italic"; return; }
-
       if (itemsToSubmit.length === 0) { statusMsg.innerText = "Please select at least one item."; statusMsg.className = "text-gray-600 font-bold text-sm italic"; return; }
-
       
-
       btn.innerText = "SENDING..."; btn.disabled = true;
-
       statusMsg.innerText = "Processing request..."; statusMsg.className = "text-gray-600 font-bold text-sm italic";
 
-
-
       const payload = {
-
         empId: targetEmpId,
-
         requestType: type,
-
         consent: consent,
-
         items: itemsToSubmit,
-
         initiatedBy: initiatorName
-
       };
-
-
 
       const res = await gasApiCall('submitRequest', payload);
 
-
-
       btn.innerText = "SUBMIT REQUEST"; btn.disabled = false;
-
       if (res.success) {
-
         statusMsg.innerText = isProxy ? "PROXY REQUEST LOGGED: " + targetEmpId : "REQUEST SUBMITTED SUCCESSFULLY";
-
         statusMsg.className = "text-black font-bold text-sm uppercase tracking-wider";
-
         document.getElementById('itemsContainer').innerHTML = '';
-
         addItemRow('itemsContainer');
-
         resetFormUI();
-
         fetchDashboardData();
-
       } else {
-
         statusMsg.innerText = res.message.toUpperCase();
-
         statusMsg.className = "text-gray-600 font-bold text-sm italic";
-
       }
-
     }
-
-
 
     async function fetchDashboardData() {
-
       const response = await gasApiCall('getDashboardData', {
-
         userRole: currentUser.role,
-
         userOutlet: currentUser.user['OUTLET'] || "N/A",
-
         empId: currentUser.empId
-
       });
-
-
 
       if (response.success) {
-
         globalRequestsData = response.adminRequests || [];
-
         globalInventoryData = response.inventory || [];
-
         
-
         renderHistoryTable(response.myHistory || []);
 
-
-
         if (['FINANCE', 'HR', 'SUPER_ADMIN', 'DEPT_HEAD'].includes(currentUser.role)) {
-
           populateOutletDropdowns();
-
           if (currentUser.role === 'FINANCE' || currentUser.role === 'SUPER_ADMIN') {
-
             renderFinanceTable(globalRequestsData);
-
           }
-
           if (currentUser.role === 'HR' || currentUser.role === 'SUPER_ADMIN' || currentUser.role === 'DEPT_HEAD') {
-
             renderAdminTable(globalRequestsData);
-
           }
-
           if (currentUser.role === 'HR' || currentUser.role === 'SUPER_ADMIN') {
-
             renderInventoryTable(globalInventoryData);
-
           }
-
           renderCharts();
-
         }
-
       } else {
-
         console.error("Dashboard Sync Error:", response.message);
-
       }
-
     }
-
-
 
     async function changeRequestStatus(reqId, newStatus) {
-
       if(!confirm(`Mark this request as ${newStatus}?`)) return;
-
       const actionUser = currentUser.user['COMPLETE NAME'] || currentUser.empId;
-
       
-
       const res = await gasApiCall('updateRequestStatus', {
-
         requestId: reqId,
-
         newStatus: newStatus,
-
         actionBy: actionUser
-
       });
 
-
-
       if (res.success) {
-
         document.getElementById('searchDb').value = ''; 
-
         fetchDashboardData();
-
       } else {
-
         alert("Error: " + res.message);
-
       }
-
     }
-
-
 
     async function saveEditedRequest() {
-
       const reqId = document.getElementById('editReqId').value;
-
       const type = document.getElementById('editReqType').value;
-
       const consent = document.getElementById('editReqConsent').checked;
-
       const statusMsg = document.getElementById('editStatusMsg');
-
       const btn = document.getElementById('saveEditBtn');
-
       const editUser = currentUser.user['COMPLETE NAME'] || currentUser.empId;
-
       
-
       const itemRows = document.querySelectorAll('#editItemsContainer .item-row');
-
       const itemsToSubmit = [];
-
       itemRows.forEach(row => {
-
         const item = row.querySelector('.req-item-select').value;
-
         const qty = row.querySelector('.req-item-qty').value;
-
         if (item && qty > 0) itemsToSubmit.push({ uniform: item, qty: qty });
-
       });
-
-
 
       if (itemsToSubmit.length === 0) { statusMsg.innerText = "MUST HAVE AT LEAST ONE ITEM."; statusMsg.className = "text-gray-600 font-bold italic"; return; }
-
       
-
       btn.innerText = "SAVING..."; btn.disabled = true;
-
       statusMsg.innerText = "UPDATING..."; statusMsg.className = "text-black font-bold tracking-wider uppercase";
 
-
-
       const payload = {
-
         requestId: reqId,
-
         requestType: type,
-
         consent: consent,
-
         items: itemsToSubmit,
-
         editedBy: editUser
-
       };
 
-
-
       const res = await gasApiCall('editRequestByHR', payload);
-
       
-
       btn.innerText = "SAVE CHANGES"; btn.disabled = false;
-
       if (res.success) {
-
         document.getElementById('searchDb').value = ''; 
-
         closeEditModal(); 
-
         fetchDashboardData();
-
       } else {
-
         statusMsg.innerText = res.message.toUpperCase(); 
-
         statusMsg.className = "text-gray-600 font-bold italic";
-
       }
-
     }
-
-
 
     async function submitRestock() {
-
       const uniformCodeInput = document.getElementById('restockUniformId').value.trim();
-
       const qty = parseInt(document.getElementById('restockQty').value);
-
       const statusMsg = document.getElementById('restockStatusMsg');
-
       const btn = document.getElementById('saveRestockBtn');
-
       
-
       if (!qty || qty <= 0) { statusMsg.innerText = "ENTER VALID QUANTITY."; statusMsg.className = "text-gray-600 font-bold italic"; return; }
-
       
-
       btn.innerText = "SAVING..."; btn.disabled = true;
-
       statusMsg.innerText = "UPDATING DB..."; statusMsg.className = "text-black tracking-wider uppercase font-bold";
 
-
-
       const res = await gasApiCall('restockUniform', { uniform: uniformCodeInput, qty: qty });
-
       
-
       btn.innerText = "ADD STOCK"; btn.disabled = false;
-
       if (res.success) {
-
         closeRestockModal(); 
-
         fetchDashboardData();
-
       } else {
-
         statusMsg.innerText = res.message.toUpperCase(); 
-
         statusMsg.className = "text-gray-600 font-bold italic";
-
       }
-
     }
-
-
 
     async function submitFinanceTag() {
-
       const reqId = document.getElementById('finReqId').value;
-
       const period = document.getElementById('finPeriod').value;
-
       const remarks = document.getElementById('finRemarks').value;
-
       const statusMsg = document.getElementById('finStatusMsg');
-
       const btn = document.getElementById('saveFinBtn');
-
       
-
       if (!period) { statusMsg.innerText = "PERIOD IS REQUIRED."; statusMsg.className = "text-gray-600 font-bold italic"; return; }
-
       
-
       btn.innerText = "SAVING..."; btn.disabled = true;
-
       statusMsg.innerText = "TAGGING..."; statusMsg.className = "text-black tracking-wider uppercase font-bold";
 
-
-
       const res = await gasApiCall('addFinanceTag', {
-
         requestId: reqId,
-
         period: period,
-
         remarks: remarks,
-
         taggedBy: currentUser.user['COMPLETE NAME']
-
       });
-
-
 
       btn.innerText = "ADD TAG"; btn.disabled = false;
-
       if (res.success) {
-
         document.getElementById('searchFin').value = ''; 
-
         closeFinanceModal(); 
-
         fetchDashboardData();
-
       } else {
-
         statusMsg.innerText = res.message.toUpperCase(); 
-
         statusMsg.className = "text-gray-600 font-bold italic";
-
       }
-
     }
 
-
-
     // =========================================================================
-
     // RENDERING & UI HELPERS
-
     // =========================================================================
-
     function openEditModal(reqId) {
-
       const req = globalRequestsData.find(r => r.RequestID === reqId);
-
       if(!req) return;
-
-      if(req.Status === 'DELIVERED') { alert("Cannot edit a Delivered request to prevent inventory conflicts. Change it to PENDING first."); return; }
-
+      if(req.Status === 'RELEASED') { alert("Cannot edit a Released request to prevent inventory conflicts. Change it to PENDING first."); return; }
       
-
       document.getElementById('editReqId').value = req.RequestID;
-
       document.getElementById('editReqIdLabel').innerText = req.RequestID;
-
       document.getElementById('editReqType').value = req.RequestType;
-
       
-
       const isATD = (req.RequestType === 'ATD (Wear & Tear)' || req.RequestType === 'Maternity' || req.RequestType === 'Offboarding/Clearance');
-
       const consentBox = document.getElementById('editConsentBox');
-
       if (isATD) {
-
         consentBox.classList.remove('hidden');
-
         document.getElementById('editReqConsent').checked = (req.PayrollDeductConsent === 'YES');
-
       } else {
-
         consentBox.classList.add('hidden');
-
         document.getElementById('editReqConsent').checked = false;
-
       }
-
       
-
       const container = document.getElementById('editItemsContainer');
-
       container.innerHTML = '';
-
       req.RawItems.forEach(item => addItemRow('editItemsContainer', item.uniform, item.qty, true));
-
       document.getElementById('editModal').classList.remove('hidden');
-
     }
-
-
 
     function closeEditModal() {
-
       document.getElementById('editModal').classList.add('hidden');
-
       document.getElementById('editStatusMsg').innerText = '';
-
     }
-
-
 
     function openRestockModal(uniformName) {
-
       document.getElementById('restockUniformId').value = uniformName;
-
       document.getElementById('restockItemName').innerText = uniformName;
-
       document.getElementById('restockQty').value = "";
-
       document.getElementById('restockModal').classList.remove('hidden');
-
     }
-
-
 
     function closeRestockModal() {
-
       document.getElementById('restockModal').classList.add('hidden');
-
       document.getElementById('restockStatusMsg').innerText = '';
-
     }
-
-
 
     function openFinanceModal(reqId) {
-
       document.getElementById('finReqId').value = reqId;
-
       document.getElementById('finPeriod').value = "";
-
       document.getElementById('finRemarks').value = "";
-
       document.getElementById('financeModal').classList.remove('hidden');
-
     }
-
-
 
     function closeFinanceModal() {
-
       document.getElementById('financeModal').classList.add('hidden');
-
       document.getElementById('finStatusMsg').innerText = '';
-
     }
-
-
 
     function renderCharts() {
-
       if ((currentUser.role === 'HR' || currentUser.role === 'SUPER_ADMIN') && document.getElementById('hrPieChart')) {
-
         const ctxPie = document.getElementById('hrPieChart').getContext('2d');
-
-        let pending = 0, delivered = 0, rejected = 0;
-
+        let pending = 0, released = 0, rejected = 0;
         globalRequestsData.forEach(r => {
-
           if(r.Status === 'PENDING') pending++;
-
-          else if(r.Status === 'DELIVERED') delivered++;
-
+          else if(r.Status === 'RELEASED') released++;
           else if(r.Status === 'REJECTED') rejected++;
-
         });
-
         
-
         if(hrPieChartObj) hrPieChartObj.destroy();
-
         hrPieChartObj = new Chart(ctxPie, {
-
           type: 'doughnut',
-
           data: {
-
-            labels: ['Pending', 'Delivered', 'Rejected'],
-
+            labels: ['Pending', 'Released', 'Rejected'],
             datasets: [{
-
-              data: [pending, delivered, rejected],
-
+              data: [pending, released, rejected],
               backgroundColor: ['#E5E7EB', '#000000', '#9CA3AF'],
-
               borderWidth: 0
-
             }]
-
           },
-
           options: { responsive: true, plugins: { legend: { position: 'bottom' } }, cutout: '75%' }
-
         });
-
       }
-
-
 
       if ((currentUser.role === 'HR' || currentUser.role === 'SUPER_ADMIN') && document.getElementById('invMovementChart') && globalInventoryData) {
-
         const ctxInv = document.getElementById('invMovementChart').getContext('2d');
-
         
-
-        const filteredInv = globalInventoryData.filter(item => item.TOTAL_DELIVERED >= 1);
-
-        let sortedInv = [...filteredInv].sort((a,b) => b.TOTAL_DELIVERED - a.TOTAL_DELIVERED);
-
-
+        const filteredInv = globalInventoryData.filter(item => item.TOTAL_RELEASED >= 1);
+        let sortedInv = [...filteredInv].sort((a,b) => b.TOTAL_RELEASED - a.TOTAL_RELEASED);
 
         let labels = sortedInv.map(i => i.UNIFORM);
-
-        let dataDelivered = sortedInv.map(i => i.TOTAL_DELIVERED);
-
-
+        let dataReleased = sortedInv.map(i => i.TOTAL_RELEASED);
 
         let bgColors = sortedInv.map((_, i) => {
-
            let lightness = Math.max(10, 10 + (i * (80 / Math.max(1, sortedInv.length))));
-
            return `hsl(0, 0%, ${lightness}%)`;
-
         });
-
-
 
         if(invMovementChartObj) invMovementChartObj.destroy();
-
         invMovementChartObj = new Chart(ctxInv, {
-
           type: 'doughnut',
-
           data: {
-
             labels: labels,
-
             datasets: [{
-
-              label: 'Total Items Delivered',
-
-              data: dataDelivered,
-
+              label: 'Total Items Released',
+              data: dataReleased,
               backgroundColor: bgColors,
-
               borderWidth: 1,
-
               borderColor: '#ffffff'
-
             }]
-
           },
-
           options: {
-
             responsive: true,
-
             maintainAspectRatio: false,
-
             cutout: '58%',
-
             plugins: {
-
               legend: { position: 'right', labels: { boxWidth: 12 } }
-
             }
-
           }
-
         });
-
       }
-
-
 
       if ((currentUser.role === 'FINANCE' || currentUser.role === 'SUPER_ADMIN') && document.getElementById('finBarChart')) {
-
         const ctxBar = document.getElementById('finBarChart').getContext('2d');
-
         const outletTotals = {};
-
         const outletLabels = {};
-
         
-
         globalRequestsData.forEach(r => {
-
           if (r.CostCategory === 'COMPANY_EXPENSE_PNL') {
-
             const rawOutlet = String(r.Outlet || 'Unknown').trim();
-
             const outletKey = rawOutlet.toLowerCase();
-
             const displayOutlet = rawOutlet || 'Unknown';
 
-
-
             if (!outletTotals[outletKey]) outletTotals[outletKey] = 0;
-
             if (!outletLabels[outletKey]) outletLabels[outletKey] = displayOutlet;
 
-
-
             outletTotals[outletKey] += Number(r.TotalCost) || 0;
-
           }
-
         });
-
         
-
         const labels = Object.keys(outletTotals).map(key => outletLabels[key]);
-
         const data = Object.keys(outletTotals).map(key => outletTotals[key]);
-
         
-
         if(finBarChartObj) finBarChartObj.destroy();
-
         finBarChartObj = new Chart(ctxBar, {
-
           type: 'bar',
-
           data: {
-
             labels: labels,
-
             datasets: [{
-
               label: 'Total P&L Expense (₱)',
-
               data: data,
-
               backgroundColor: '#000000',
-
               borderRadius: 2
-
             }]
-
           },
-
           options: {
-
             responsive: true,
-
             maintainAspectRatio: false,
-
             scales: { y: { beginAtZero: true, grid: { color: '#E5E7EB' } }, x: { grid: { display: false } } }
-
           }
-
         });
-
       }
-
     }
-
-
 
     function populateOutletDropdowns() {
-
       const uniqueOutlets = [...new Set(globalRequestsData.map(req => req.Outlet))].sort();
-
       const dbSelect = document.getElementById('filterOutlet');
-
       dbSelect.innerHTML = '<option value="ALL">All Outlets</option>';
-
       uniqueOutlets.forEach(out => { if(out) dbSelect.innerHTML += `<option value="${out}">${out}</option>`; });
-
       
-
       const finSelect = document.getElementById('filterOutletFin');
-
       finSelect.innerHTML = '<option value="ALL">All Outlets</option>';
-
       uniqueOutlets.forEach(out => { if(out) finSelect.innerHTML += `<option value="${out}">${out}</option>`; });
-
     }
-
-
 
     function applyFilters() {
-
       const search = document.getElementById('searchDb').value.toLowerCase();
-
       const outlet = document.getElementById('filterOutlet').value;
-
       const filtered = globalRequestsData.filter(req => {
-
         const textMatch = (req.EmployeeName.toLowerCase().includes(search) || String(req.EmployeeID).includes(search) || req.RequestID.toLowerCase().includes(search));
-
         const outletMatch = (outlet === 'ALL' || req.Outlet === outlet);
-
         return textMatch && outletMatch;
-
       });
-
       renderAdminTable(filtered);
-
     }
-
-
 
     function applyFiltersFinance() {
-
       const search = document.getElementById('searchFin').value.toLowerCase();
-
       const outlet = document.getElementById('filterOutletFin').value;
-
       const filtered = globalRequestsData.filter(req => {
-
         const textMatch = (req.EmployeeName.toLowerCase().includes(search) || String(req.EmployeeID).includes(search) || req.RequestID.toLowerCase().includes(search));
-
         const outletMatch = (outlet === 'ALL' || req.Outlet === outlet);
-
         return textMatch && outletMatch;
-
       });
-
       renderFinanceTable(filtered);
-
     }
-
-
 
     function getCostBadge(category) {
-
       if(category === 'ATD_PAYROLL') return `<span class="bg-gray-200 text-black px-2 py-1 rounded-sm text-[10px] font-bold uppercase tracking-wider">Payroll Deduct</span>`;
-
       if(category === 'FINAL_PAY_DEDUCTION') return `<span class="bg-gray-300 text-black px-2 py-1 rounded-sm text-[10px] font-bold uppercase tracking-wider">Final Pay Deduct</span>`;
-
       if(category === 'COMPANY_EXPENSE_PNL') return `<span class="bg-white border border-gray-300 text-black px-2 py-1 rounded-sm text-[10px] font-bold uppercase tracking-wider">P&L Expense</span>`;
-
       return `<span class="bg-gray-100 text-gray-500 px-2 py-1 rounded-sm text-[10px] font-bold uppercase tracking-wider">${category}</span>`;
-
     }
-
-
 
     function getStatusBadge(status) {
-
-      if(status === 'DELIVERED') return `<span class="bg-black text-white px-3 py-1 rounded-sm text-[10px] font-bold uppercase tracking-widest border border-black">DELIVERED</span>`;
-
+      if(status === 'RELEASED') return `<span class="bg-black text-white px-3 py-1 rounded-sm text-[10px] font-bold uppercase tracking-widest border border-black">RELEASED</span>`;
       if(status === 'REJECTED') return `<span class="bg-gray-400 text-white px-3 py-1 rounded-sm text-[10px] font-bold uppercase tracking-widest border border-gray-400">REJECTED</span>`;
-
       return `<span class="bg-white text-black px-3 py-1 rounded-sm text-[10px] font-bold uppercase tracking-widest border border-black">${status}</span>`;
-
     }
-
-
 
     function buildAuditHtml(req) {
-
       let html = '';
-
       if (req.InitiatedBy) html += `<span class="text-[9px] text-gray-600 block mt-2 leading-tight font-bold uppercase tracking-wider">Init: ${req.InitiatedBy}</span>`;
-
       if (req.ActionBy) html += `<span class="text-[9px] text-gray-400 block leading-tight uppercase tracking-wider">Act: ${req.ActionBy}</span>`;
-
       if (req.EditedBy) html += `<span class="text-[9px] text-gray-400 block leading-tight uppercase tracking-wider">Edit: ${req.EditedBy}</span>`;
-
       return html;
-
     }
-
-
 
     function renderHistoryTable(requests) {
-
       const tbody = document.getElementById('historyTableBody');
-
       tbody.innerHTML = '';
-
       if(requests.length === 0) { tbody.innerHTML = `<tr><td colspan="6" class="p-6 text-center text-gray-400 uppercase tracking-widest text-xs font-bold">No requests yet.</td></tr>`; return; }
-
       requests.forEach(req => {
-
         const tr = document.createElement('tr');
-
         tr.className = "border-b border-gray-200 hover:bg-gray-50 transition";
-
         tr.innerHTML = `<td class="p-4 text-xs text-gray-500">${req.Timestamp || "N/A"}</td> <td class="p-4 text-sm">${req.RequestType}</td> <td class="p-4 text-sm font-bold text-black leading-tight">${req.ItemsListHtml}</td> <td class="p-4">${getCostBadge(req.CostCategory)}</td> <td class="p-4 text-sm font-bold text-black">₱${req.TotalCost}</td> <td class="p-4">${getStatusBadge(req.Status)}${buildAuditHtml(req)}</td>`;
-
         tbody.appendChild(tr);
-
       });
-
     }
-
-
 
     function renderAdminTable(requests) {
-
       const tbody = document.getElementById('adminTableBody');
-
       tbody.innerHTML = '';
-
       if(requests.length === 0) { tbody.innerHTML = `<tr><td colspan="8" class="p-6 text-center text-gray-400 uppercase tracking-widest text-xs font-bold">No requests found.</td></tr>`; return; }
-
       requests.forEach(req => {
-
         let actionsHtml = '';
-
         if (currentUser.role === 'HR' || currentUser.role === 'SUPER_ADMIN') {
-
           if (req.Status === 'PENDING') {
-
-            actionsHtml += `<button onclick="changeRequestStatus('${req.RequestID}', 'DELIVERED')" class="px-3 py-1 bg-black text-white hover:bg-gray-800 font-bold rounded-sm text-[10px] mr-2 transition uppercase tracking-wider" title="Mark as Delivered">✓</button>`;
-
+            actionsHtml += `<button onclick="changeRequestStatus('${req.RequestID}', 'RELEASED')" class="px-3 py-1 bg-black text-white hover:bg-gray-800 font-bold rounded-sm text-[10px] mr-2 transition uppercase tracking-wider" title="Mark as Released">✓</button>`;
             actionsHtml += `<button onclick="changeRequestStatus('${req.RequestID}', 'REJECTED')" class="px-3 py-1 bg-gray-200 text-black hover:bg-gray-300 font-bold rounded-sm text-[10px] mr-2 transition uppercase tracking-wider" title="Deny">X</button>`;
-
           }
-
-          if (req.Status !== 'DELIVERED') {
-
+          if (req.Status !== 'RELEASED') {
             actionsHtml += `<button onclick="openEditModal('${req.RequestID}')" class="px-3 py-1 mt-2 bg-white border border-gray-300 text-black hover:bg-gray-100 font-bold rounded-sm text-[10px] transition uppercase tracking-wider" title="Edit Request">EDIT</button>`;
-
           }
-
         }
-
         const tr = document.createElement('tr');
-
         tr.className = "border-b border-gray-200 hover:bg-gray-50 transition";
-
         tr.innerHTML = `<td class="p-4 text-[11px] text-gray-500">${req.Timestamp || "N/A"}</td> <td class="p-4 text-sm"><strong class="text-black">${req.EmployeeID}</strong><br><span class="text-xs text-gray-500 uppercase tracking-wider">${req.EmployeeName}</span></td> <td class="p-4 text-sm">${req.Outlet}</td> <td class="p-4 text-sm font-bold text-black leading-tight">${req.ItemsListHtml}</td> <td class="p-4 text-sm font-bold text-black">₱${req.TotalCost}</td> <td class="p-4 text-center">${getStatusBadge(req.Status)}${buildAuditHtml(req)}</td> <td class="p-4 leading-tight text-xs">${req.FinanceTagsHtml}</td> <td class="p-4 text-center">${actionsHtml}</td>`;
-
         tbody.appendChild(tr);
-
       });
-
     }
-
-
 
     function renderFinanceTable(requests) {
-
       const tbody = document.getElementById('financeTableBody');
-
       tbody.innerHTML = '';
-
       if(requests.length === 0) { tbody.innerHTML = `<tr><td colspan="8" class="p-6 text-center text-gray-400 uppercase tracking-widest text-xs font-bold">No requests found.</td></tr>`; return; }
-
       requests.forEach(req => {
-
         let actionBtn = '';
-
-        if ((currentUser.role === 'FINANCE' || currentUser.role === 'SUPER_ADMIN') && req.Status === 'DELIVERED') {
-
+        if ((currentUser.role === 'FINANCE' || currentUser.role === 'SUPER_ADMIN') && req.Status === 'RELEASED') {
            actionBtn = `<button onclick="openFinanceModal('${req.RequestID}')" class="px-3 py-1 bg-black text-white hover:bg-gray-800 font-bold rounded-sm text-[10px] transition uppercase tracking-wider">+ ADD TAG</button>`;
-
         } else if ((currentUser.role === 'FINANCE' || currentUser.role === 'SUPER_ADMIN') && req.Status === 'PENDING') {
-
-           actionBtn = `<span class="text-[10px] text-gray-400 font-bold italic uppercase tracking-wider">Awaiting Delivery</span>`;
-
+           actionBtn = `<span class="text-[10px] text-gray-400 font-bold italic uppercase tracking-wider">Awaiting Release</span>`;
         }
-
         const tr = document.createElement('tr');
-
         tr.className = "border-b border-gray-200 hover:bg-gray-50 transition";
-
         tr.innerHTML = `<td class="p-4 text-[11px] text-gray-500">${req.Timestamp || "N/A"}</td> <td class="p-4 text-sm"><strong class="text-black">${req.EmployeeID}</strong><br><span class="text-xs text-gray-500 uppercase tracking-wider">${req.EmployeeName}</span></td> <td class="p-4 text-sm font-bold text-black leading-tight">${req.ItemsListHtml}</td> <td class="p-4">${getCostBadge(req.CostCategory)}</td> <td class="p-4 text-sm font-bold text-black">₱${req.TotalCost}</td> <td class="p-4 text-center">${getStatusBadge(req.Status)}${buildAuditHtml(req)}</td> <td class="p-4 leading-tight text-xs">${req.FinanceTagsHtml}</td> <td class="p-4 text-center">${actionBtn}</td>`;
-
         tbody.appendChild(tr);
-
       });
-
     }
-
-
 
     function renderInventoryTable(inventory) {
-
       const tbody = document.getElementById('inventoryTableBody');
-
       tbody.innerHTML = '';
-
       if(inventory.length === 0) return;
-
       inventory.forEach(item => {
-
         let statusBadge = `<span class="bg-gray-200 text-black px-3 py-1 rounded-sm text-[10px] font-bold uppercase tracking-widest">OPTIMAL</span>`;
-
         let rowClass = "border-b border-gray-200 hover:bg-gray-50 transition";
-
         
-
         if (item.AVAILABLE_STOCK > item.BASE_STOCK && item.BASE_STOCK > 0) {
-
           statusBadge = `<span class="bg-white border border-black text-black px-3 py-1 rounded-sm text-[10px] font-bold uppercase tracking-widest">OVERSTOCK</span>`;
-
         } else if (item.AVAILABLE_STOCK <= 5) {
-
           statusBadge = `<span class="bg-black text-white px-3 py-1 rounded-sm text-[10px] font-bold uppercase tracking-widest animate-pulse">LOW STOCK</span>`;
-
           rowClass = "border-b border-gray-200 bg-gray-100";
-
         }
-
         
-
         const tr = document.createElement('tr');
-
         tr.className = rowClass;
-
         tr.innerHTML = `
-
           <td class="p-4 text-sm font-bold text-black">${item.UNIFORM}</td>
-
           <td class="p-4 text-sm text-center text-gray-500">${item.BASE_STOCK}</td>
-
           <td class="p-4 text-sm text-center font-bold text-gray-600">${item.PENDING_QTY}</td>
-
           <td class="p-4 text-xl text-center font-bold text-black">${item.AVAILABLE_STOCK}</td>
-
           <td class="p-4 text-center">${statusBadge}</td>
-
           <td class="p-4 text-center">
-
             <button onclick="openRestockModal('${item.UNIFORM}')" class="px-3 py-1 bg-white border border-gray-300 text-black hover:bg-gray-100 font-bold rounded-sm text-[10px] transition uppercase tracking-wider">RESTOCK</button>
-
           </td>
-
         `;
-
         tbody.appendChild(tr);
-
       });
-
     }
-
-
 
     function exportCSV() {
-
       if(globalRequestsData.length === 0) return;
-
       let csvContent = "data:text/csv;charset=utf-8,Date,Request ID,Employee ID,Employee Name,Outlet,Request Type,Cost Category,Total Cost,Status\n";
-
       globalRequestsData.forEach(function(req) {
-
         csvContent += [`"${req.Timestamp}"`, req.RequestID, req.EmployeeID, `"${req.EmployeeName}"`, req.Outlet, req.RequestType, req.CostCategory, req.TotalCost, req.Status].join(",") + "\r\n";
-
       });
-
       const link = document.createElement("a");
-
       link.setAttribute("href", encodeURI(csvContent));
-
       link.setAttribute("download", "Uniform_Requests_Export.csv");
-
       document.body.appendChild(link);
-
       link.click();
-
       document.body.removeChild(link);
-
     }
-
   </script>
-
 </body>
-
-</html> 
-
+</html>
