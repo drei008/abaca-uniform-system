@@ -184,7 +184,7 @@
       <h2 class="text-lg font-bold text-black mb-6 border-b border-gray-200 pb-3 uppercase tracking-wider">Live Inventory Tracker</h2>
       
       <div id="invChartContainer" class="mb-8 bg-gray-50 p-6 rounded-sm border border-gray-200">
-        <h3 class="text-center font-bold text-black text-sm uppercase tracking-widest mb-4">Uniform Movement (Total Delivered Items)</h3>
+        <h3 class="text-center font-bold text-black text-sm uppercase tracking-widest mb-4">Uniform Movement (Total Released Items)</h3>
         <div class="w-full max-w-md mx-auto h-64">
           <canvas id="invMovementChart"></canvas>
         </div>
@@ -196,7 +196,7 @@
             <tr class="bg-black text-white uppercase text-[10px] tracking-wider">
               <th class="p-3 border-r border-gray-700">Uniform Item</th>
               <th class="p-3 border-r border-gray-700 text-center">Base Target Stock</th>
-              <th class="p-3 border-r border-gray-700 text-center text-gray-400">Pending Delivery</th>
+              <th class="p-3 border-r border-gray-700 text-center text-gray-400">Pending Release</th>
               <th class="p-3 border-r border-gray-700 text-center text-lg">On-Hand Stock</th>
               <th class="p-3 border-r border-gray-700 text-center">Status</th>
               <th class="p-3 text-center">Action</th>
@@ -792,7 +792,7 @@
     function openEditModal(reqId) {
       const req = globalRequestsData.find(r => r.RequestID === reqId);
       if(!req) return;
-      if(req.Status === 'DELIVERED') { alert("Cannot edit a Delivered request to prevent inventory conflicts. Change it to PENDING first."); return; }
+      if(req.Status === 'RELEASED') { alert("Cannot edit a Released request to prevent inventory conflicts. Change it to PENDING first."); return; }
       
       document.getElementById('editReqId').value = req.RequestID;
       document.getElementById('editReqIdLabel').innerText = req.RequestID;
@@ -846,10 +846,10 @@
     function renderCharts() {
       if ((currentUser.role === 'HR' || currentUser.role === 'SUPER_ADMIN') && document.getElementById('hrPieChart')) {
         const ctxPie = document.getElementById('hrPieChart').getContext('2d');
-        let pending = 0, delivered = 0, rejected = 0;
+        let pending = 0, released = 0, rejected = 0;
         globalRequestsData.forEach(r => {
           if(r.Status === 'PENDING') pending++;
-          else if(r.Status === 'DELIVERED') delivered++;
+          else if(r.Status === 'RELEASED') released++;
           else if(r.Status === 'REJECTED') rejected++;
         });
         
@@ -857,9 +857,9 @@
         hrPieChartObj = new Chart(ctxPie, {
           type: 'doughnut',
           data: {
-            labels: ['Pending', 'Delivered', 'Rejected'],
+            labels: ['Pending', 'Released', 'Rejected'],
             datasets: [{
-              data: [pending, delivered, rejected],
+              data: [pending, released, rejected],
               backgroundColor: ['#E5E7EB', '#000000', '#9CA3AF'],
               borderWidth: 0
             }]
@@ -871,11 +871,11 @@
       if ((currentUser.role === 'HR' || currentUser.role === 'SUPER_ADMIN') && document.getElementById('invMovementChart') && globalInventoryData) {
         const ctxInv = document.getElementById('invMovementChart').getContext('2d');
         
-        const filteredInv = globalInventoryData.filter(item => item.TOTAL_DELIVERED >= 1);
-        let sortedInv = [...filteredInv].sort((a,b) => b.TOTAL_DELIVERED - a.TOTAL_DELIVERED);
+        const filteredInv = globalInventoryData.filter(item => item.TOTAL_RELEASED >= 1);
+        let sortedInv = [...filteredInv].sort((a,b) => b.TOTAL_RELEASED - a.TOTAL_RELEASED);
 
         let labels = sortedInv.map(i => i.UNIFORM);
-        let dataDelivered = sortedInv.map(i => i.TOTAL_DELIVERED);
+        let dataReleased = sortedInv.map(i => i.TOTAL_RELEASED);
 
         let bgColors = sortedInv.map((_, i) => {
            let lightness = Math.max(10, 10 + (i * (80 / Math.max(1, sortedInv.length))));
@@ -888,8 +888,8 @@
           data: {
             labels: labels,
             datasets: [{
-              label: 'Total Items Delivered',
-              data: dataDelivered,
+              label: 'Total Items Released',
+              data: dataReleased,
               backgroundColor: bgColors,
               borderWidth: 1,
               borderColor: '#ffffff'
@@ -989,7 +989,7 @@
     }
 
     function getStatusBadge(status) {
-      if(status === 'DELIVERED') return `<span class="bg-black text-white px-3 py-1 rounded-sm text-[10px] font-bold uppercase tracking-widest border border-black">DELIVERED</span>`;
+      if(status === 'RELEASED') return `<span class="bg-black text-white px-3 py-1 rounded-sm text-[10px] font-bold uppercase tracking-widest border border-black">RELEASED</span>`;
       if(status === 'REJECTED') return `<span class="bg-gray-400 text-white px-3 py-1 rounded-sm text-[10px] font-bold uppercase tracking-widest border border-gray-400">REJECTED</span>`;
       return `<span class="bg-white text-black px-3 py-1 rounded-sm text-[10px] font-bold uppercase tracking-widest border border-black">${status}</span>`;
     }
@@ -1022,10 +1022,10 @@
         let actionsHtml = '';
         if (currentUser.role === 'HR' || currentUser.role === 'SUPER_ADMIN') {
           if (req.Status === 'PENDING') {
-            actionsHtml += `<button onclick="changeRequestStatus('${req.RequestID}', 'DELIVERED')" class="px-3 py-1 bg-black text-white hover:bg-gray-800 font-bold rounded-sm text-[10px] mr-2 transition uppercase tracking-wider" title="Mark as Delivered">✓</button>`;
+            actionsHtml += `<button onclick="changeRequestStatus('${req.RequestID}', 'RELEASED')" class="px-3 py-1 bg-black text-white hover:bg-gray-800 font-bold rounded-sm text-[10px] mr-2 transition uppercase tracking-wider" title="Mark as Released">✓</button>`;
             actionsHtml += `<button onclick="changeRequestStatus('${req.RequestID}', 'REJECTED')" class="px-3 py-1 bg-gray-200 text-black hover:bg-gray-300 font-bold rounded-sm text-[10px] mr-2 transition uppercase tracking-wider" title="Deny">X</button>`;
           }
-          if (req.Status !== 'DELIVERED') {
+          if (req.Status !== 'RELEASED') {
             actionsHtml += `<button onclick="openEditModal('${req.RequestID}')" class="px-3 py-1 mt-2 bg-white border border-gray-300 text-black hover:bg-gray-100 font-bold rounded-sm text-[10px] transition uppercase tracking-wider" title="Edit Request">EDIT</button>`;
           }
         }
@@ -1042,10 +1042,10 @@
       if(requests.length === 0) { tbody.innerHTML = `<tr><td colspan="8" class="p-6 text-center text-gray-400 uppercase tracking-widest text-xs font-bold">No requests found.</td></tr>`; return; }
       requests.forEach(req => {
         let actionBtn = '';
-        if ((currentUser.role === 'FINANCE' || currentUser.role === 'SUPER_ADMIN') && req.Status === 'DELIVERED') {
+        if ((currentUser.role === 'FINANCE' || currentUser.role === 'SUPER_ADMIN') && req.Status === 'RELEASED') {
            actionBtn = `<button onclick="openFinanceModal('${req.RequestID}')" class="px-3 py-1 bg-black text-white hover:bg-gray-800 font-bold rounded-sm text-[10px] transition uppercase tracking-wider">+ ADD TAG</button>`;
         } else if ((currentUser.role === 'FINANCE' || currentUser.role === 'SUPER_ADMIN') && req.Status === 'PENDING') {
-           actionBtn = `<span class="text-[10px] text-gray-400 font-bold italic uppercase tracking-wider">Awaiting Delivery</span>`;
+           actionBtn = `<span class="text-[10px] text-gray-400 font-bold italic uppercase tracking-wider">Awaiting Release</span>`;
         }
         const tr = document.createElement('tr');
         tr.className = "border-b border-gray-200 hover:bg-gray-50 transition";
