@@ -1,3 +1,6 @@
+
+
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -23,7 +26,7 @@
         <label class="block text-black text-sm font-bold mb-2">Security PIN <span class="text-xs text-gray-400 font-normal ml-1">(Leave blank for standard)</span></label>
         <input type="password" id="pinInput" class="w-full px-4 py-3 border border-gray-300 rounded-sm focus:ring-1 focus:ring-black focus:border-black outline-none transition" placeholder="••••">
       </div>
-      <button id="loginBtn" onclick="attemptLogin()" class="w-full bg-black hover:bg-gray-800 text-white font-bold py-3 px-4 rounded-sm transition tracking-wider uppercase text-sm">LOG IN</button>
+      <button id="loginBtn" onclick="attemptLogin()" class="w-full bg-black hover:bg-gray-800 text-white font-bold py-3 px-4 rounded-sm transition tracking-wider uppercase text-sm">Log In</button>
       <p id="errorMessage" class="text-gray-500 font-semibold italic text-sm mt-4 text-center hidden"></p>
     </div>
   </div>
@@ -184,7 +187,7 @@
       <h2 class="text-lg font-bold text-black mb-6 border-b border-gray-200 pb-3 uppercase tracking-wider">Live Inventory Tracker</h2>
       
       <div id="invChartContainer" class="mb-8 bg-gray-50 p-6 rounded-sm border border-gray-200">
-        <h3 class="text-center font-bold text-black text-sm uppercase tracking-widest mb-4">Uniform Movement (Total Released Items)</h3>
+        <h3 class="text-center font-bold text-black text-sm uppercase tracking-widest mb-4">Uniform Movement (Total Delivered Items)</h3>
         <div class="w-full max-w-md mx-auto h-64">
           <canvas id="invMovementChart"></canvas>
         </div>
@@ -196,7 +199,7 @@
             <tr class="bg-black text-white uppercase text-[10px] tracking-wider">
               <th class="p-3 border-r border-gray-700">Uniform Item</th>
               <th class="p-3 border-r border-gray-700 text-center">Base Target Stock</th>
-              <th class="p-3 border-r border-gray-700 text-center text-gray-400">Pending Release</th>
+              <th class="p-3 border-r border-gray-700 text-center text-gray-400">Pending Delivery</th>
               <th class="p-3 border-r border-gray-700 text-center text-lg">On-Hand Stock</th>
               <th class="p-3 border-r border-gray-700 text-center">Status</th>
               <th class="p-3 text-center">Action</th>
@@ -339,11 +342,6 @@
   </div>
 
   <script>
-    // =========================================================================
-    // THE API BRIDGE
-    // =========================================================================
-    const GAS_API_URL = "https://script.google.com/macros/s/AKfycby0vzc8l2S4NZ9eKCdzxixOmsmvygJhy4WHvsMDynpDij2esh4Cf9-FK-JCvwP4-sjW7w/exec";
-    
     let currentUser = null;
     let globalRequestsData = [];
     let globalUniformsList = [];
@@ -353,90 +351,72 @@
     let finBarChartObj = null;
     let invMovementChartObj = null;
 
-    // A unified helper to send requests to your Google Apps Script backend
-    async function gasApiCall(actionName, payloadData) {
-      try {
-        const response = await fetch(GAS_API_URL, {
-          method: 'POST',
-          headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-          body: JSON.stringify({ action: actionName, payload: payloadData })
-        });
-        return await response.json();
-      } catch (error) {
-        console.error("API Call Failed:", error);
-        return { success: false, message: "Network Error: Could not connect to database." };
-      }
-    }
-
-    // =========================================================================
-    // AUTHENTICATION
-    // =========================================================================
-    async function attemptLogin() {
-      const empId = document.getElementById('empIdInput').value.trim();
-      const pin = document.getElementById('pinInput').value.trim();
-      
+    function attemptLogin() {
+      const empId = document.getElementById('empIdInput').value;
+      const pin = document.getElementById('pinInput').value;
       if (!empId) { showError("Please enter your Employee ID."); return; }
       
       document.getElementById('loginBtn').innerText = "AUTHENTICATING...";
       document.getElementById('loginBtn').disabled = true;
       document.getElementById('errorMessage').classList.add('hidden');
-
-      const response = await gasApiCall('login', { empId: empId, pin: pin });
       
-      if (response.success) {
-        handleLoginResponse(response);
-      } else {
-        showError(response.message);
-        document.getElementById('loginBtn').innerText = "LOG IN";
-        document.getElementById('loginBtn').disabled = false;
-      }
+      google.script.run.withSuccessHandler(handleLoginResponse).withFailureHandler(handleLoginCrash).loginUser({ empId: empId, pin: pin });
     }
 
     function handleLoginResponse(response) {
       document.getElementById('loginBtn').innerText = "LOG IN";
       document.getElementById('loginBtn').disabled = false;
-      
-      currentUser = response;
-      document.getElementById('uiName').innerText = response.user['COMPLETE NAME'] || "Name Unknown";
-      document.getElementById('uiRole').innerText = response.role;
-      document.getElementById('uiDept').innerText = response.user['DEPARTMENT'] || "N/A";
-      document.getElementById('uiOutlet').innerText = response.user['OUTLET'] || "N/A";
-      
-      resetFormUI();
-      if (response.role === 'HR' || response.role === 'SUPER_ADMIN') {
-        document.getElementById('hrProxySection').classList.remove('hidden');
+      if (response.success) {
+        currentUser = response;
+        document.getElementById('uiName').innerText = response.user['COMPLETE NAME'] || "Name Unknown";
+        document.getElementById('uiRole').innerText = response.role;
+        document.getElementById('uiDept').innerText = response.user['DEPARTMENT'] || "N/A";
+        document.getElementById('uiOutlet').innerText = response.user['OUTLET'] || "N/A";
+        
+        resetFormUI();
+        if (response.role === 'HR' || response.role === 'SUPER_ADMIN') {
+          document.getElementById('hrProxySection').classList.remove('hidden');
+        } else {
+          document.getElementById('hrProxySection').classList.add('hidden');
+        }
+        
+        globalUniformsList = response.uniforms || [];
+        document.getElementById('itemsContainer').innerHTML = '';
+        addItemRow('itemsContainer');
+        
+        document.getElementById('tabNavigation').classList.remove('hidden');
+        document.getElementById('btnTab-history').classList.remove('hidden');
+        
+        if (response.role === 'DEPT_HEAD') {
+          document.getElementById('btnTab-database').classList.remove('hidden');
+        } else if (response.role === 'HR') {
+          document.getElementById('btnTab-database').classList.remove('hidden');
+          document.getElementById('btnTab-inventory').classList.remove('hidden');
+          document.getElementById('hrChartContainer').classList.remove('hidden');
+        } else if (response.role === 'FINANCE') {
+          document.getElementById('btnTab-finance').classList.remove('hidden');
+          document.getElementById('finChartContainer').classList.remove('hidden');
+        } else if (response.role === 'SUPER_ADMIN') {
+          document.getElementById('btnTab-database').classList.remove('hidden');
+          document.getElementById('btnTab-inventory').classList.remove('hidden');
+          document.getElementById('btnTab-finance').classList.remove('hidden');
+          document.getElementById('hrChartContainer').classList.remove('hidden');
+          document.getElementById('finChartContainer').classList.remove('hidden');
+        }
+        
+        fetchDashboardData();
+        switchTab('request');
+        document.getElementById('loginScreen').classList.add('hidden');
+        document.getElementById('dashboardScreen').classList.remove('hidden');
       } else {
-        document.getElementById('hrProxySection').classList.add('hidden');
+        showError(response.message);
       }
-      
-      globalUniformsList = response.uniforms || [];
-      document.getElementById('itemsContainer').innerHTML = '';
-      addItemRow('itemsContainer');
-      
-      document.getElementById('tabNavigation').classList.remove('hidden');
-      document.getElementById('btnTab-history').classList.remove('hidden');
-      
-      if (response.role === 'DEPT_HEAD') {
-        document.getElementById('btnTab-database').classList.remove('hidden');
-      } else if (response.role === 'HR') {
-        document.getElementById('btnTab-database').classList.remove('hidden');
-        document.getElementById('btnTab-inventory').classList.remove('hidden');
-        document.getElementById('hrChartContainer').classList.remove('hidden');
-      } else if (response.role === 'FINANCE') {
-        document.getElementById('btnTab-finance').classList.remove('hidden');
-        document.getElementById('finChartContainer').classList.remove('hidden');
-      } else if (response.role === 'SUPER_ADMIN') {
-        document.getElementById('btnTab-database').classList.remove('hidden');
-        document.getElementById('btnTab-inventory').classList.remove('hidden');
-        document.getElementById('btnTab-finance').classList.remove('hidden');
-        document.getElementById('hrChartContainer').classList.remove('hidden');
-        document.getElementById('finChartContainer').classList.remove('hidden');
-      }
-      
-      fetchDashboardData();
-      switchTab('request');
-      document.getElementById('loginScreen').classList.add('hidden');
-      document.getElementById('dashboardScreen').classList.remove('hidden');
+    }
+
+    function handleLoginCrash(error) {
+      document.getElementById('loginBtn').innerText = "LOG IN";
+      document.getElementById('loginBtn').disabled = false;
+      showError("System Error: " + error.message);
     }
 
     function showError(msg) {
@@ -463,9 +443,6 @@
       if(invMovementChartObj) invMovementChartObj.destroy();
     }
 
-    // =========================================================================
-    // UI NAVIGATION & FORMS
-    // =========================================================================
     function resetFormUI() {
       document.getElementById('reqStatusMsg').innerText = "";
       document.getElementById('reqType').value = "";
@@ -578,10 +555,7 @@
       container.appendChild(row);
     }
 
-    // =========================================================================
-    // BACKEND ACTIONS
-    // =========================================================================
-    async function processRequest() {
+    function processRequest() {
       const isProxy = document.getElementById('isProxyRequest') ? document.getElementById('isProxyRequest').checked : false;
       let type = "";
       let targetEmpId = currentUser.empId;
@@ -614,242 +588,63 @@
 
       if (!type) { statusMsg.innerText = "Please select a Request Type."; statusMsg.className = "text-gray-600 font-bold text-sm italic"; return; }
       if (itemsToSubmit.length === 0) { statusMsg.innerText = "Please select at least one item."; statusMsg.className = "text-gray-600 font-bold text-sm italic"; return; }
-      
+      if ((type === 'ATD (Wear & Tear)' || type === 'Maternity' || type === 'Offboarding/Clearance') && !consent) {
+        statusMsg.innerText = "You must agree to payroll deduction."; statusMsg.className = "text-gray-600 font-bold text-sm italic"; return;
+      }
+
       btn.innerText = "SENDING..."; btn.disabled = true;
       statusMsg.innerText = "Processing request..."; statusMsg.className = "text-gray-600 font-bold text-sm italic";
-
-      const payload = {
-        empId: targetEmpId,
-        requestType: type,
-        consent: consent,
-        items: itemsToSubmit,
-        initiatedBy: initiatorName
-      };
-
-      const res = await gasApiCall('submitRequest', payload);
-
-      btn.innerText = "SUBMIT REQUEST"; btn.disabled = false;
-      if (res.success) {
-        statusMsg.innerText = isProxy ? "PROXY REQUEST LOGGED: " + targetEmpId : "REQUEST SUBMITTED SUCCESSFULLY";
-        statusMsg.className = "text-black font-bold text-sm uppercase tracking-wider";
-        document.getElementById('itemsContainer').innerHTML = '';
-        addItemRow('itemsContainer');
-        resetFormUI();
-        fetchDashboardData();
-      } else {
-        statusMsg.innerText = res.message.toUpperCase();
-        statusMsg.className = "text-gray-600 font-bold text-sm italic";
-      }
-    }
-
-    async function fetchDashboardData() {
-      const response = await gasApiCall('getDashboardData', {
-        userRole: currentUser.role,
-        userOutlet: currentUser.user['OUTLET'] || "N/A",
-        empId: currentUser.empId
-      });
-
-      if (response.success) {
-        globalRequestsData = response.adminRequests || [];
-        globalInventoryData = response.inventory || [];
-        
-        renderHistoryTable(response.myHistory || []);
-
-        if (['FINANCE', 'HR', 'SUPER_ADMIN', 'DEPT_HEAD'].includes(currentUser.role)) {
-          populateOutletDropdowns();
-          if (currentUser.role === 'FINANCE' || currentUser.role === 'SUPER_ADMIN') {
-            renderFinanceTable(globalRequestsData);
-          }
-          if (currentUser.role === 'HR' || currentUser.role === 'SUPER_ADMIN' || currentUser.role === 'DEPT_HEAD') {
-            renderAdminTable(globalRequestsData);
-          }
-          if (currentUser.role === 'HR' || currentUser.role === 'SUPER_ADMIN') {
-            renderInventoryTable(globalInventoryData);
-          }
-          renderCharts();
+      
+      google.script.run.withSuccessHandler(function(res) {
+        btn.innerText = "SUBMIT REQUEST"; btn.disabled = false;
+        if(res.success) {
+          if (isProxy) statusMsg.innerText = "PROXY REQUEST LOGGED: " + targetEmpId;
+          else statusMsg.innerText = res.message.toUpperCase();
+          statusMsg.className = "text-black font-bold text-sm uppercase tracking-wider";
+          document.getElementById('itemsContainer').innerHTML = '';
+          addItemRow('itemsContainer');
+          resetFormUI();
+          fetchDashboardData();
+        } else {
+          statusMsg.innerText = res.message.toUpperCase();
+          statusMsg.className = "text-gray-600 font-bold text-sm italic";
         }
-      } else {
-        console.error("Dashboard Sync Error:", response.message);
-      }
+      }).submitRequest({ empId: targetEmpId, requestType: type, consent: consent, items: itemsToSubmit, initiatedBy: initiatorName });
     }
 
-    async function changeRequestStatus(reqId, newStatus) {
-      if(!confirm(`Mark this request as ${newStatus}?`)) return;
-      const actionUser = currentUser.user['COMPLETE NAME'] || currentUser.empId;
-      
-      const res = await gasApiCall('updateRequestStatus', {
-        requestId: reqId,
-        newStatus: newStatus,
-        actionBy: actionUser
-      });
-
-      if (res.success) {
-        document.getElementById('searchDb').value = ''; 
-        fetchDashboardData();
-      } else {
-        alert("Error: " + res.message);
-      }
-    }
-
-    async function saveEditedRequest() {
-      const reqId = document.getElementById('editReqId').value;
-      const type = document.getElementById('editReqType').value;
-      const consent = document.getElementById('editReqConsent').checked;
-      const statusMsg = document.getElementById('editStatusMsg');
-      const btn = document.getElementById('saveEditBtn');
-      const editUser = currentUser.user['COMPLETE NAME'] || currentUser.empId;
-      
-      const itemRows = document.querySelectorAll('#editItemsContainer .item-row');
-      const itemsToSubmit = [];
-      itemRows.forEach(row => {
-        const item = row.querySelector('.req-item-select').value;
-        const qty = row.querySelector('.req-item-qty').value;
-        if (item && qty > 0) itemsToSubmit.push({ uniform: item, qty: qty });
-      });
-
-      if (itemsToSubmit.length === 0) { statusMsg.innerText = "MUST HAVE AT LEAST ONE ITEM."; statusMsg.className = "text-gray-600 font-bold italic"; return; }
-      
-      btn.innerText = "SAVING..."; btn.disabled = true;
-      statusMsg.innerText = "UPDATING..."; statusMsg.className = "text-black font-bold tracking-wider uppercase";
-
-      const payload = {
-        requestId: reqId,
-        requestType: type,
-        consent: consent,
-        items: itemsToSubmit,
-        editedBy: editUser
-      };
-
-      const res = await gasApiCall('editRequestByHR', payload);
-      
-      btn.innerText = "SAVE CHANGES"; btn.disabled = false;
-      if (res.success) {
-        document.getElementById('searchDb').value = ''; 
-        closeEditModal(); 
-        fetchDashboardData();
-      } else {
-        statusMsg.innerText = res.message.toUpperCase(); 
-        statusMsg.className = "text-gray-600 font-bold italic";
-      }
-    }
-
-    async function submitRestock() {
-      const uniformCodeInput = document.getElementById('restockUniformId').value.trim();
-      const qty = parseInt(document.getElementById('restockQty').value);
-      const statusMsg = document.getElementById('restockStatusMsg');
-      const btn = document.getElementById('saveRestockBtn');
-      
-      if (!qty || qty <= 0) { statusMsg.innerText = "ENTER VALID QUANTITY."; statusMsg.className = "text-gray-600 font-bold italic"; return; }
-      
-      btn.innerText = "SAVING..."; btn.disabled = true;
-      statusMsg.innerText = "UPDATING DB..."; statusMsg.className = "text-black tracking-wider uppercase font-bold";
-
-      const res = await gasApiCall('restockUniform', { uniform: uniformCodeInput, qty: qty });
-      
-      btn.innerText = "ADD STOCK"; btn.disabled = false;
-      if (res.success) {
-        closeRestockModal(); 
-        fetchDashboardData();
-      } else {
-        statusMsg.innerText = res.message.toUpperCase(); 
-        statusMsg.className = "text-gray-600 font-bold italic";
-      }
-    }
-
-    async function submitFinanceTag() {
-      const reqId = document.getElementById('finReqId').value;
-      const period = document.getElementById('finPeriod').value;
-      const remarks = document.getElementById('finRemarks').value;
-      const statusMsg = document.getElementById('finStatusMsg');
-      const btn = document.getElementById('saveFinBtn');
-      
-      if (!period) { statusMsg.innerText = "PERIOD IS REQUIRED."; statusMsg.className = "text-gray-600 font-bold italic"; return; }
-      
-      btn.innerText = "SAVING..."; btn.disabled = true;
-      statusMsg.innerText = "TAGGING..."; statusMsg.className = "text-black tracking-wider uppercase font-bold";
-
-      const res = await gasApiCall('addFinanceTag', {
-        requestId: reqId,
-        period: period,
-        remarks: remarks,
-        taggedBy: currentUser.user['COMPLETE NAME']
-      });
-
-      btn.innerText = "ADD TAG"; btn.disabled = false;
-      if (res.success) {
-        document.getElementById('searchFin').value = ''; 
-        closeFinanceModal(); 
-        fetchDashboardData();
-      } else {
-        statusMsg.innerText = res.message.toUpperCase(); 
-        statusMsg.className = "text-gray-600 font-bold italic";
-      }
-    }
-
-    // =========================================================================
-    // RENDERING & UI HELPERS
-    // =========================================================================
-    function openEditModal(reqId) {
-      const req = globalRequestsData.find(r => r.RequestID === reqId);
-      if(!req) return;
-      if(req.Status === 'RELEASED') { alert("Cannot edit a Released request to prevent inventory conflicts. Change it to PENDING first."); return; }
-      
-      document.getElementById('editReqId').value = req.RequestID;
-      document.getElementById('editReqIdLabel').innerText = req.RequestID;
-      document.getElementById('editReqType').value = req.RequestType;
-      
-      const isATD = (req.RequestType === 'ATD (Wear & Tear)' || req.RequestType === 'Maternity' || req.RequestType === 'Offboarding/Clearance');
-      const consentBox = document.getElementById('editConsentBox');
-      if (isATD) {
-        consentBox.classList.remove('hidden');
-        document.getElementById('editReqConsent').checked = (req.PayrollDeductConsent === 'YES');
-      } else {
-        consentBox.classList.add('hidden');
-        document.getElementById('editReqConsent').checked = false;
-      }
-      
-      const container = document.getElementById('editItemsContainer');
-      container.innerHTML = '';
-      req.RawItems.forEach(item => addItemRow('editItemsContainer', item.uniform, item.qty, true));
-      document.getElementById('editModal').classList.remove('hidden');
-    }
-
-    function closeEditModal() {
-      document.getElementById('editModal').classList.add('hidden');
-      document.getElementById('editStatusMsg').innerText = '';
-    }
-
-    function openRestockModal(uniformName) {
-      document.getElementById('restockUniformId').value = uniformName;
-      document.getElementById('restockItemName').innerText = uniformName;
-      document.getElementById('restockQty').value = "";
-      document.getElementById('restockModal').classList.remove('hidden');
-    }
-
-    function closeRestockModal() {
-      document.getElementById('restockModal').classList.add('hidden');
-      document.getElementById('restockStatusMsg').innerText = '';
-    }
-
-    function openFinanceModal(reqId) {
-      document.getElementById('finReqId').value = reqId;
-      document.getElementById('finPeriod').value = "";
-      document.getElementById('finRemarks').value = "";
-      document.getElementById('financeModal').classList.remove('hidden');
-    }
-
-    function closeFinanceModal() {
-      document.getElementById('financeModal').classList.add('hidden');
-      document.getElementById('finStatusMsg').innerText = '';
+    function fetchDashboardData() {
+      google.script.run.withSuccessHandler(function(response) {
+        if(response.success) {
+          renderHistoryTable(response.myHistory);
+          if(currentUser.role === 'FINANCE') {
+            globalRequestsData = response.adminRequests;
+            populateOutletDropdowns();
+            renderFinanceTable(globalRequestsData);
+            renderCharts();
+          } else if(currentUser.role === 'HR' || currentUser.role === 'DEPT_HEAD' || currentUser.role === 'SUPER_ADMIN') {
+            globalRequestsData = response.adminRequests;
+            populateOutletDropdowns();
+            renderAdminTable(globalRequestsData);
+            if(currentUser.role === 'HR' || currentUser.role === 'SUPER_ADMIN') {
+              globalInventoryData = response.inventory;
+              renderInventoryTable(globalInventoryData);
+              renderCharts();
+            }
+            if(currentUser.role === 'SUPER_ADMIN') {
+               renderFinanceTable(globalRequestsData);
+            }
+          }
+        }
+      }).getDashboardData(currentUser.role, currentUser.user['OUTLET'] || "N/A", currentUser.empId);
     }
 
     function renderCharts() {
       if ((currentUser.role === 'HR' || currentUser.role === 'SUPER_ADMIN') && document.getElementById('hrPieChart')) {
         const ctxPie = document.getElementById('hrPieChart').getContext('2d');
-        let pending = 0, released = 0, rejected = 0;
+        let pending = 0, delivered = 0, rejected = 0;
         globalRequestsData.forEach(r => {
           if(r.Status === 'PENDING') pending++;
-          else if(r.Status === 'RELEASED') released++;
+          else if(r.Status === 'DELIVERED') delivered++;
           else if(r.Status === 'REJECTED') rejected++;
         });
         
@@ -857,9 +652,9 @@
         hrPieChartObj = new Chart(ctxPie, {
           type: 'doughnut',
           data: {
-            labels: ['Pending', 'Released', 'Rejected'],
+            labels: ['Pending', 'Delivered', 'Rejected'],
             datasets: [{
-              data: [pending, released, rejected],
+              data: [pending, delivered, rejected],
               backgroundColor: ['#E5E7EB', '#000000', '#9CA3AF'],
               borderWidth: 0
             }]
@@ -870,12 +665,12 @@
 
       if ((currentUser.role === 'HR' || currentUser.role === 'SUPER_ADMIN') && document.getElementById('invMovementChart') && globalInventoryData) {
         const ctxInv = document.getElementById('invMovementChart').getContext('2d');
-        
-        const filteredInv = globalInventoryData.filter(item => item.TOTAL_RELEASED >= 1);
-        let sortedInv = [...filteredInv].sort((a,b) => b.TOTAL_RELEASED - a.TOTAL_RELEASED);
+
+        const filteredInv = globalInventoryData.filter(item => item.TOTAL_DELIVERED >= 1);
+        let sortedInv = [...filteredInv].sort((a,b) => b.TOTAL_DELIVERED - a.TOTAL_DELIVERED);
 
         let labels = sortedInv.map(i => i.UNIFORM);
-        let dataReleased = sortedInv.map(i => i.TOTAL_RELEASED);
+        let dataDelivered = sortedInv.map(i => i.TOTAL_DELIVERED);
 
         let bgColors = sortedInv.map((_, i) => {
            let lightness = Math.max(10, 10 + (i * (80 / Math.max(1, sortedInv.length))));
@@ -888,8 +683,8 @@
           data: {
             labels: labels,
             datasets: [{
-              label: 'Total Items Released',
-              data: dataReleased,
+              label: 'Total Items Delivered',
+              data: dataDelivered,
               backgroundColor: bgColors,
               borderWidth: 1,
               borderColor: '#ffffff'
@@ -909,23 +704,17 @@
       if ((currentUser.role === 'FINANCE' || currentUser.role === 'SUPER_ADMIN') && document.getElementById('finBarChart')) {
         const ctxBar = document.getElementById('finBarChart').getContext('2d');
         const outletTotals = {};
-        const outletLabels = {};
         
         globalRequestsData.forEach(r => {
-          if (r.CostCategory === 'COMPANY_EXPENSE_PNL') {
-            const rawOutlet = String(r.Outlet || 'Unknown').trim();
-            const outletKey = rawOutlet.toLowerCase();
-            const displayOutlet = rawOutlet || 'Unknown';
-
-            if (!outletTotals[outletKey]) outletTotals[outletKey] = 0;
-            if (!outletLabels[outletKey]) outletLabels[outletKey] = displayOutlet;
-
-            outletTotals[outletKey] += Number(r.TotalCost) || 0;
+          if(r.CostCategory === 'COMPANY_EXPENSE_PNL') {
+            const out = r.Outlet || 'Unknown';
+            if(!outletTotals[out]) outletTotals[out] = 0;
+            outletTotals[out] += Number(r.TotalCost) || 0;
           }
         });
         
-        const labels = Object.keys(outletTotals).map(key => outletLabels[key]);
-        const data = Object.keys(outletTotals).map(key => outletTotals[key]);
+        const labels = Object.keys(outletTotals);
+        const data = Object.values(outletTotals);
         
         if(finBarChartObj) finBarChartObj.destroy();
         finBarChartObj = new Chart(ctxBar, {
@@ -981,6 +770,140 @@
       renderFinanceTable(filtered);
     }
 
+    function changeRequestStatus(reqId, newStatus) {
+      if(!confirm(`Mark this request as ${newStatus}?`)) return;
+      let actionUser = currentUser.user['COMPLETE NAME'] || currentUser.empId;
+      google.script.run.withSuccessHandler(res => {
+        if(res.success) { document.getElementById('searchDb').value = ''; fetchDashboardData(); }
+        else alert(res.message);
+      }).updateRequestStatus(reqId, newStatus, actionUser);
+    }
+
+    function openEditModal(reqId) {
+      const req = globalRequestsData.find(r => r.RequestID === reqId);
+      if(!req) return;
+      if(req.Status === 'DELIVERED') { alert("Cannot edit a Delivered request to prevent inventory conflicts. Change it to PENDING first."); return; }
+      
+      document.getElementById('editReqId').value = req.RequestID;
+      document.getElementById('editReqIdLabel').innerText = req.RequestID;
+      document.getElementById('editReqType').value = req.RequestType;
+      
+      const isATD = (req.RequestType === 'ATD (Wear & Tear)' || req.RequestType === 'Maternity' || req.RequestType === 'Offboarding/Clearance');
+      const consentBox = document.getElementById('editConsentBox');
+      if (isATD) {
+        consentBox.classList.remove('hidden');
+        document.getElementById('editReqConsent').checked = (req.PayrollDeductConsent === 'YES');
+      } else {
+        consentBox.classList.add('hidden');
+        document.getElementById('editReqConsent').checked = false;
+      }
+      
+      const container = document.getElementById('editItemsContainer');
+      container.innerHTML = '';
+      req.RawItems.forEach(item => addItemRow('editItemsContainer', item.uniform, item.qty, true));
+      document.getElementById('editModal').classList.remove('hidden');
+    }
+
+    function closeEditModal() {
+      document.getElementById('editModal').classList.add('hidden');
+      document.getElementById('editStatusMsg').innerText = '';
+    }
+
+    function toggleEditConsent() {
+      const type = document.getElementById('editReqType').value;
+      if (type === 'ATD (Wear & Tear)' || type === 'Maternity' || type === 'Offboarding/Clearance') document.getElementById('editConsentBox').classList.remove('hidden');
+      else { document.getElementById('editConsentBox').classList.add('hidden'); document.getElementById('editReqConsent').checked = false; }
+    }
+
+    function saveEditedRequest() {
+      const reqId = document.getElementById('editReqId').value;
+      const type = document.getElementById('editReqType').value;
+      const consent = document.getElementById('editReqConsent').checked;
+      const statusMsg = document.getElementById('editStatusMsg');
+      const btn = document.getElementById('saveEditBtn');
+      let editUser = currentUser.user['COMPLETE NAME'] || currentUser.empId;
+      
+      const itemRows = document.querySelectorAll('#editItemsContainer .item-row');
+      const itemsToSubmit = [];
+      itemRows.forEach(row => {
+        const item = row.querySelector('.req-item-select').value;
+        const qty = row.querySelector('.req-item-qty').value;
+        if (item && qty > 0) itemsToSubmit.push({ uniform: item, qty: qty });
+      });
+
+      if (itemsToSubmit.length === 0) { statusMsg.innerText = "MUST HAVE AT LEAST ONE ITEM."; statusMsg.className = "text-gray-600 font-bold italic"; return; }
+      
+      btn.innerText = "SAVING..."; btn.disabled = true;
+      statusMsg.innerText = "UPDATING..."; statusMsg.className = "text-black font-bold tracking-wider uppercase";
+      
+      google.script.run.withSuccessHandler(function(res) {
+        btn.innerText = "SAVE CHANGES"; btn.disabled = false;
+        if(res.success) { document.getElementById('searchDb').value = ''; closeEditModal(); fetchDashboardData(); }
+        else { statusMsg.innerText = res.message.toUpperCase(); statusMsg.className = "text-gray-600 font-bold italic"; }
+      }).editRequestByHR({ requestId: reqId, requestType: type, consent: consent, items: itemsToSubmit, editedBy: editUser });
+    }
+
+    function openRestockModal(uniformName) {
+      document.getElementById('restockUniformId').value = uniformName;
+      document.getElementById('restockItemName').innerText = uniformName;
+      document.getElementById('restockQty').value = "";
+      document.getElementById('restockModal').classList.remove('hidden');
+    }
+
+    function closeRestockModal() {
+      document.getElementById('restockModal').classList.add('hidden');
+      document.getElementById('restockStatusMsg').innerText = '';
+    }
+
+    function submitRestock() {
+      const uniform = document.getElementById('restockUniformId').value;
+      const qty = document.getElementById('restockQty').value;
+      const statusMsg = document.getElementById('restockStatusMsg');
+      const btn = document.getElementById('saveRestockBtn');
+      
+      if (!qty || qty <= 0) { statusMsg.innerText = "ENTER VALID QUANTITY."; statusMsg.className = "text-gray-600 font-bold italic"; return; }
+      
+      btn.innerText = "SAVING..."; btn.disabled = true;
+      statusMsg.innerText = "UPDATING DB..."; statusMsg.className = "text-black tracking-wider uppercase font-bold";
+      
+      google.script.run.withSuccessHandler(function(res) {
+        btn.innerText = "ADD STOCK"; btn.disabled = false;
+        if(res.success) { closeRestockModal(); fetchDashboardData(); }
+        else { statusMsg.innerText = res.message.toUpperCase(); statusMsg.className = "text-gray-600 font-bold italic"; }
+      }).restockUniform({ uniform: uniform, qty: qty });
+    }
+
+    function openFinanceModal(reqId) {
+      document.getElementById('finReqId').value = reqId;
+      document.getElementById('finPeriod').value = "";
+      document.getElementById('finRemarks').value = "";
+      document.getElementById('financeModal').classList.remove('hidden');
+    }
+
+    function closeFinanceModal() {
+      document.getElementById('financeModal').classList.add('hidden');
+      document.getElementById('finStatusMsg').innerText = '';
+    }
+
+    function submitFinanceTag() {
+      const reqId = document.getElementById('finReqId').value;
+      const period = document.getElementById('finPeriod').value;
+      const remarks = document.getElementById('finRemarks').value;
+      const statusMsg = document.getElementById('finStatusMsg');
+      const btn = document.getElementById('saveFinBtn');
+      
+      if (!period) { statusMsg.innerText = "PERIOD IS REQUIRED."; statusMsg.className = "text-gray-600 font-bold italic"; return; }
+      
+      btn.innerText = "SAVING..."; btn.disabled = true;
+      statusMsg.innerText = "TAGGING..."; statusMsg.className = "text-black tracking-wider uppercase font-bold";
+      
+      google.script.run.withSuccessHandler(function(res) {
+        btn.innerText = "ADD TAG"; btn.disabled = false;
+        if(res.success) { document.getElementById('searchFin').value = ''; closeFinanceModal(); fetchDashboardData(); }
+        else { statusMsg.innerText = res.message.toUpperCase(); statusMsg.className = "text-gray-600 font-bold italic"; }
+      }).addFinanceTag({ requestId: reqId, period: period, remarks: remarks, taggedBy: currentUser.user['COMPLETE NAME'] });
+    }
+
     function getCostBadge(category) {
       if(category === 'ATD_PAYROLL') return `<span class="bg-gray-200 text-black px-2 py-1 rounded-sm text-[10px] font-bold uppercase tracking-wider">Payroll Deduct</span>`;
       if(category === 'FINAL_PAY_DEDUCTION') return `<span class="bg-gray-300 text-black px-2 py-1 rounded-sm text-[10px] font-bold uppercase tracking-wider">Final Pay Deduct</span>`;
@@ -989,7 +912,7 @@
     }
 
     function getStatusBadge(status) {
-      if(status === 'RELEASED') return `<span class="bg-black text-white px-3 py-1 rounded-sm text-[10px] font-bold uppercase tracking-widest border border-black">RELEASED</span>`;
+      if(status === 'DELIVERED') return `<span class="bg-black text-white px-3 py-1 rounded-sm text-[10px] font-bold uppercase tracking-widest border border-black">DELIVERED</span>`;
       if(status === 'REJECTED') return `<span class="bg-gray-400 text-white px-3 py-1 rounded-sm text-[10px] font-bold uppercase tracking-widest border border-gray-400">REJECTED</span>`;
       return `<span class="bg-white text-black px-3 py-1 rounded-sm text-[10px] font-bold uppercase tracking-widest border border-black">${status}</span>`;
     }
@@ -1022,10 +945,10 @@
         let actionsHtml = '';
         if (currentUser.role === 'HR' || currentUser.role === 'SUPER_ADMIN') {
           if (req.Status === 'PENDING') {
-            actionsHtml += `<button onclick="changeRequestStatus('${req.RequestID}', 'RELEASED')" class="px-3 py-1 bg-black text-white hover:bg-gray-800 font-bold rounded-sm text-[10px] mr-2 transition uppercase tracking-wider" title="Mark as Released">✓</button>`;
+            actionsHtml += `<button onclick="changeRequestStatus('${req.RequestID}', 'DELIVERED')" class="px-3 py-1 bg-black text-white hover:bg-gray-800 font-bold rounded-sm text-[10px] mr-2 transition uppercase tracking-wider" title="Mark as Delivered">✓</button>`;
             actionsHtml += `<button onclick="changeRequestStatus('${req.RequestID}', 'REJECTED')" class="px-3 py-1 bg-gray-200 text-black hover:bg-gray-300 font-bold rounded-sm text-[10px] mr-2 transition uppercase tracking-wider" title="Deny">X</button>`;
           }
-          if (req.Status !== 'RELEASED') {
+          if (req.Status !== 'DELIVERED') {
             actionsHtml += `<button onclick="openEditModal('${req.RequestID}')" class="px-3 py-1 mt-2 bg-white border border-gray-300 text-black hover:bg-gray-100 font-bold rounded-sm text-[10px] transition uppercase tracking-wider" title="Edit Request">EDIT</button>`;
           }
         }
@@ -1042,10 +965,10 @@
       if(requests.length === 0) { tbody.innerHTML = `<tr><td colspan="8" class="p-6 text-center text-gray-400 uppercase tracking-widest text-xs font-bold">No requests found.</td></tr>`; return; }
       requests.forEach(req => {
         let actionBtn = '';
-        if ((currentUser.role === 'FINANCE' || currentUser.role === 'SUPER_ADMIN') && req.Status === 'RELEASED') {
+        if ((currentUser.role === 'FINANCE' || currentUser.role === 'SUPER_ADMIN') && req.Status === 'DELIVERED') {
            actionBtn = `<button onclick="openFinanceModal('${req.RequestID}')" class="px-3 py-1 bg-black text-white hover:bg-gray-800 font-bold rounded-sm text-[10px] transition uppercase tracking-wider">+ ADD TAG</button>`;
         } else if ((currentUser.role === 'FINANCE' || currentUser.role === 'SUPER_ADMIN') && req.Status === 'PENDING') {
-           actionBtn = `<span class="text-[10px] text-gray-400 font-bold italic uppercase tracking-wider">Awaiting Release</span>`;
+           actionBtn = `<span class="text-[10px] text-gray-400 font-bold italic uppercase tracking-wider">Awaiting Delivery</span>`;
         }
         const tr = document.createElement('tr');
         tr.className = "border-b border-gray-200 hover:bg-gray-50 transition";
