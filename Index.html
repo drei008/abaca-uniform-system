@@ -339,32 +339,38 @@
   </div>
 
   <script>
-    const STEIN_API_BASE = "https://api.steinhq.com/v1/storages/6a3ca08f92b1163e970e7a97";
+    // =========================================================================
+    // THE API BRIDGE
+    // =========================================================================
+    const GAS_API_URL = "https://script.google.com/macros/s/AKfycby0vzc8l2S4NZ9eKCdzxixOmsmvygJhy4WHvsMDynpDij2esh4Cf9-FK-JCvwP4-sjW7w/exec";
     
     let currentUser = null;
     let globalRequestsData = [];
     let globalUniformsList = [];
     let globalInventoryData = [];
-    let globalLineItems = [];
-    let globalInventoryRaw = [];
     
     let hrPieChartObj = null;
     let finBarChartObj = null;
     let invMovementChartObj = null;
 
-    // Safe fetch helper to prevent JSON parsing crashes on missing/restricted sheets
-    async function safeFetch(sheetName) {
+    // A unified helper to send requests to your Google Apps Script backend
+    async function gasApiCall(actionName, payloadData) {
       try {
-        const res = await fetch(`${STEIN_API_BASE}/${sheetName}`);
-        const data = await res.json();
-        return Array.isArray(data) ? data : [];
-      } catch (e) {
-        console.warn(`Failed to load sheet: ${sheetName}`, e);
-        return [];
+        const response = await fetch(GAS_API_URL, {
+          method: 'POST',
+          headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+          body: JSON.stringify({ action: actionName, payload: payloadData })
+        });
+        return await response.json();
+      } catch (error) {
+        console.error("API Call Failed:", error);
+        return { success: false, message: "Network Error: Could not connect to database." };
       }
     }
 
-    // --- AUTHENTICATION ---
+    // =========================================================================
+    // AUTHENTICATION
+    // =========================================================================
     async function attemptLogin() {
       const empId = document.getElementById('empIdInput').value.trim();
       const pin = document.getElementById('pinInput').value.trim();
@@ -375,68 +381,12 @@
       document.getElementById('loginBtn').disabled = true;
       document.getElementById('errorMessage').classList.add('hidden');
 
-      try {
-        // Fetch users from all roles using safeFetch
-        const [superAdmins, hrAccess, finAccess, deptHeads, employees, uniforms] = await Promise.all([
-          safeFetch('SUPER%20ADMIN%20ACCESS'),
-          safeFetch('HR%20ACCESS'),
-          safeFetch('FINANCE%20ACCESS'),
-          safeFetch('DEPARTMENT%20OPs%20HEAD'),
-          safeFetch('EMPLOYEE%20LIST'),
-          safeFetch('UNIFORM%20LIST')
-        ]);
-
-        if (!employees.length && !superAdmins.length) {
-          throw new Error("Google Sheet is inaccessible. Ensure Share settings are 'Anyone with the link can view'.");
-        }
-
-        globalUniformsList = uniforms.map(u => u.UNIFORM).filter(n => n);
-        globalInventoryRaw = uniforms;
-
-        let userRecord = null;
-        let role = "";
-
-        // Check roles in hierarchy
-        userRecord = superAdmins.find(u => String(u['EMPLOYEE ID #']).trim() === empId);
-        if(userRecord) { role = "SUPER_ADMIN"; }
-        else {
-          userRecord = hrAccess.find(u => String(u['EMPLOYEE ID #']).trim() === empId);
-          if(userRecord) { role = "HR"; }
-          else {
-            userRecord = finAccess.find(u => String(u['EMPLOYEE ID #']).trim() === empId);
-            if(userRecord) { role = "FINANCE"; }
-            else {
-              userRecord = deptHeads.find(u => String(u['EMPLOYEE ID #']).trim() === empId);
-              if(userRecord) { role = "DEPT_HEAD"; }
-              else {
-                userRecord = employees.find(u => String(u['EMPLOYEE ID #']).trim() === empId);
-                if(userRecord) { role = "EMPLOYEE"; }
-              }
-            }
-          }
-        }
-
-        if(userRecord) {
-          // Check PIN for privileged roles
-          if(['SUPER_ADMIN', 'HR', 'FINANCE'].includes(role)) {
-             if(String(userRecord['PIN'] || "").trim() !== pin) {
-                showError("Invalid Security PIN.");
-                document.getElementById('loginBtn').innerText = "LOG IN";
-                document.getElementById('loginBtn').disabled = false;
-                return;
-             }
-          }
-          // Enrich data
-          const fullRecord = employees.find(u => String(u['EMPLOYEE ID #']).trim() === empId) || userRecord;
-          handleLoginResponse({success: true, role: role, empId: empId, user: fullRecord});
-        } else {
-           showError("ID not found. Access Denied.");
-           document.getElementById('loginBtn').innerText = "LOG IN";
-           document.getElementById('loginBtn').disabled = false;
-        }
-      } catch (error) {
-        console.error("Login Error:", error);
-        showError("Error: " + error.message);
+      const response = await gasApiCall('login', { empId: empId, pin: pin });
+      
+      if (response.success) {
+        handleLoginResponse(response);
+      } else {
+        showError(response.message);
         document.getElementById('loginBtn').innerText = "LOG IN";
         document.getElementById('loginBtn').disabled = false;
       }
@@ -459,6 +409,7 @@
         document.getElementById('hrProxySection').classList.add('hidden');
       }
       
+      globalUniformsList = response.uniforms || [];
       document.getElementById('itemsContainer').innerHTML = '';
       addItemRow('itemsContainer');
       
@@ -498,7 +449,6 @@
       globalRequestsData = [];
       globalUniformsList = [];
       globalInventoryData = [];
-      globalLineItems = [];
       document.getElementById('empIdInput').value = "";
       document.getElementById('pinInput').value = "";
       document.getElementById('proxyEmpId').value = "";
@@ -513,6 +463,9 @@
       if(invMovementChartObj) invMovementChartObj.destroy();
     }
 
+    // =========================================================================
+    // UI NAVIGATION & FORMS
+    // =========================================================================
     function resetFormUI() {
       document.getElementById('reqStatusMsg').innerText = "";
       document.getElementById('reqType').value = "";
@@ -576,19 +529,6 @@
       }
     }
 
-    function determineCostCategory(requestType) {
-      const companyExpense = ['Onboarding (New Hire)', 'Promotion', 'Lateral Transfer', 'Work Anniversary', 'Calamity Replacement', 'Workplace Incident'];
-      const atdPayroll = ['ATD (Wear & Tear)', 'Maternity'];
-      const finalPay = ['Offboarding/Clearance'];
-      const zeroCost = ['Size Swap (Return in 1-2 Days)'];
-
-      if (companyExpense.includes(requestType)) return 'COMPANY_EXPENSE_PNL';
-      if (atdPayroll.includes(requestType)) return 'ATD_PAYROLL';
-      if (finalPay.includes(requestType)) return 'FINAL_PAY_DEDUCTION';
-      if (zeroCost.includes(requestType)) return 'ZERO_COST';
-      return 'UNKNOWN';
-    }
-
     function getAllowedUniforms(userRecord, forceAll = false) {
       if (forceAll || !userRecord) return globalUniformsList;
       
@@ -638,7 +578,9 @@
       container.appendChild(row);
     }
 
-    // --- MAIN API REQUESTS ---
+    // =========================================================================
+    // BACKEND ACTIONS
+    // =========================================================================
     async function processRequest() {
       const isProxy = document.getElementById('isProxyRequest') ? document.getElementById('isProxyRequest').checked : false;
       let type = "";
@@ -673,168 +615,232 @@
       if (!type) { statusMsg.innerText = "Please select a Request Type."; statusMsg.className = "text-gray-600 font-bold text-sm italic"; return; }
       if (itemsToSubmit.length === 0) { statusMsg.innerText = "Please select at least one item."; statusMsg.className = "text-gray-600 font-bold text-sm italic"; return; }
       
-      const costCat = determineCostCategory(type);
-      if (costCat === 'ATD_PAYROLL' && !consent) {
-        statusMsg.innerText = "You must agree to payroll deduction."; statusMsg.className = "text-gray-600 font-bold text-sm italic"; return;
-      }
-
       btn.innerText = "SENDING..."; btn.disabled = true;
       statusMsg.innerText = "Processing request..."; statusMsg.className = "text-gray-600 font-bold text-sm italic";
-      
-      let totalCost = 0;
-      if (costCat !== 'ZERO_COST') {
-        itemsToSubmit.forEach(reqItem => {
-          const dbItem = globalInventoryRaw.find(i => String(i.UNIFORM).trim().toLowerCase() === String(reqItem.uniform).trim().toLowerCase());
-          if (dbItem) totalCost += (Number(dbItem.PRICE) * Number(reqItem.qty));
-        });
-      }
 
-      const timestamp = new Date();
-      const requestId = 'REQ-' + timestamp.getTime();
-      const timeStr = timestamp.toLocaleDateString() + " " + timestamp.toLocaleTimeString();
+      const payload = {
+        empId: targetEmpId,
+        requestType: type,
+        consent: consent,
+        items: itemsToSubmit,
+        initiatedBy: initiatorName
+      };
 
-      const requestPayload = [{
-        RequestID: requestId, Timestamp: timeStr, EmployeeID: targetEmpId,
-        RequestType: type, TotalCost: totalCost, CostCategory: costCat,
-        Status: 'PENDING', PayrollDeductConsent: consent ? 'YES' : 'NO',
-        InitiatedBy: initiatorName, ActionBy: '', EditedBy: ''
-      }];
+      const res = await gasApiCall('submitRequest', payload);
 
-      const lineItemPayload = itemsToSubmit.map(item => ({
-        RequestID: requestId, Uniform: item.uniform, Quantity: item.qty
-      }));
-
-      try {
-        await fetch(`${STEIN_API_BASE}/Requests`, {
-          method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(requestPayload)
-        });
-        await fetch(`${STEIN_API_BASE}/LineItems`, {
-          method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(lineItemPayload)
-        });
-
-        btn.innerText = "SUBMIT REQUEST"; btn.disabled = false;
-        if (isProxy) statusMsg.innerText = "PROXY REQUEST LOGGED: " + targetEmpId;
-        else statusMsg.innerText = "REQUEST SUBMITTED SUCCESSFULLY";
+      btn.innerText = "SUBMIT REQUEST"; btn.disabled = false;
+      if (res.success) {
+        statusMsg.innerText = isProxy ? "PROXY REQUEST LOGGED: " + targetEmpId : "REQUEST SUBMITTED SUCCESSFULLY";
         statusMsg.className = "text-black font-bold text-sm uppercase tracking-wider";
         document.getElementById('itemsContainer').innerHTML = '';
         addItemRow('itemsContainer');
         resetFormUI();
         fetchDashboardData();
-      } catch(error) {
-        btn.innerText = "SUBMIT REQUEST"; btn.disabled = false;
-        statusMsg.innerText = "NETWORK ERROR. PLEASE TRY AGAIN.";
+      } else {
+        statusMsg.innerText = res.message.toUpperCase();
         statusMsg.className = "text-gray-600 font-bold text-sm italic";
       }
     }
 
     async function fetchDashboardData() {
-      try {
-        const [requests, employees, lineItems, financeTags, uniforms] = await Promise.all([
-          safeFetch('Requests'),
-          safeFetch('EMPLOYEE%20LIST'),
-          safeFetch('LineItems'),
-          safeFetch('FinanceTags'),
-          safeFetch('UNIFORM%20LIST')
-        ]);
+      const response = await gasApiCall('getDashboardData', {
+        userRole: currentUser.role,
+        userOutlet: currentUser.user['OUTLET'] || "N/A",
+        empId: currentUser.empId
+      });
 
-        globalLineItems = lineItems;
-        globalInventoryRaw = uniforms;
-
-        // Perform inventory math client-side
-        const pendingReqIds = requests.filter(r => r.Status === 'PENDING').map(r => String(r.RequestID).trim());
-        const pendingDeductions = {};
-        const allDelivered = {};
-
-        lineItems.forEach(item => {
-          const reqId = String(item.RequestID).trim();
-          const uniName = String(item.Uniform).trim().toLowerCase();
-          const qty = Number(item.Quantity) || 0;
-          
-          if (pendingReqIds.includes(reqId)) {
-            if (!pendingDeductions[uniName]) pendingDeductions[uniName] = 0;
-            pendingDeductions[uniName] += qty;
-          }
-          const parentReq = requests.find(r => String(r.RequestID).trim() === reqId);
-          if (parentReq && parentReq.Status === 'DELIVERED') {
-            if (!allDelivered[uniName]) allDelivered[uniName] = 0;
-            allDelivered[uniName] += qty;
-          }
-        });
-
-        globalInventoryData = uniforms.map(u => {
-          const uName = String(u.UNIFORM).trim().toLowerCase();
-          return {
-            UNIFORM: u.UNIFORM, // Display original casing
-            PRICE: Number(u.PRICE) || 0,
-            BASE_STOCK: Number(u.BASE_STOCK) || 0,
-            AVAILABLE_STOCK: Number(u.INVENTORY) || 0,
-            PENDING_QTY: pendingDeductions[uName] || 0,
-            TOTAL_DELIVERED: allDelivered[uName] || 0
-          };
-        });
-
-        // Enrich requests
-        const itemsByReq = {};
-        lineItems.forEach(item => {
-          const rId = String(item.RequestID).trim();
-          if(!itemsByReq[rId]) itemsByReq[rId] = [];
-          itemsByReq[rId].push(`${item.Quantity}x ${item.Uniform}`);
-        });
-
-        const tagsByReq = {};
-        financeTags.forEach(tag => {
-          const rId = String(tag.RequestID).trim();
-          if(!tagsByReq[rId]) tagsByReq[rId] = [];
-          tagsByReq[rId].push(`${tag.CapturedPeriod} ${tag.Remarks ? '('+tag.Remarks+')' : ''}`);
-        });
-
-        let enrichedRequests = requests.map(req => {
-          const rId = String(req.RequestID).trim();
-          req.ItemsListHtml = itemsByReq[rId] ? itemsByReq[rId].join('<br>') : '<span class="text-gray-400">No items</span>';
-          req.RawItems = lineItems.filter(l => String(l.RequestID).trim() === rId).map(l => ({uniform: l.Uniform, qty: l.Quantity}));
-          req.FinanceTagsHtml = tagsByReq[rId] ? tagsByReq[rId].join('<br>') : '<span class="text-gray-400 text-[10px] italic">Unprocessed</span>';
-          
-          const emp = employees.find(e => String(e['EMPLOYEE ID #']).trim() === String(req.EmployeeID).trim());
-          req.EmployeeName = emp ? emp['COMPLETE NAME'] : 'Unknown Employee';
-          req.Outlet = emp ? emp['OUTLET'] : 'Unknown Outlet';
-          return req;
-        });
-        enrichedRequests.reverse();
-
-        const myHistory = enrichedRequests.filter(req => String(req.EmployeeID).trim() === String(currentUser.empId).trim());
-        let adminRequests = [];
+      if (response.success) {
+        globalRequestsData = response.adminRequests || [];
+        globalInventoryData = response.inventory || [];
         
-        if (['SUPER_ADMIN', 'HR', 'FINANCE'].includes(currentUser.role)) {
-          adminRequests = enrichedRequests;
-        } else if (currentUser.role === 'DEPT_HEAD') {
-          const allowedOutlets = (currentUser.user['OUTLET'] || "").split(',').map(s=>s.trim().toLowerCase()).filter(s=>s);
-          adminRequests = enrichedRequests.filter(req => {
-            const out = (req.Outlet || "").trim().toLowerCase();
-            return allowedOutlets.includes(out) || allowedOutlets.includes('all');
-          });
-        }
+        renderHistoryTable(response.myHistory || []);
 
-        globalRequestsData = adminRequests;
-        renderHistoryTable(myHistory);
-
-        if(currentUser.role === 'FINANCE') {
+        if (['FINANCE', 'HR', 'SUPER_ADMIN', 'DEPT_HEAD'].includes(currentUser.role)) {
           populateOutletDropdowns();
-          renderFinanceTable(globalRequestsData);
-          renderCharts();
-        } else if(currentUser.role === 'HR' || currentUser.role === 'DEPT_HEAD' || currentUser.role === 'SUPER_ADMIN') {
-          populateOutletDropdowns();
-          renderAdminTable(globalRequestsData);
-          if(currentUser.role === 'HR' || currentUser.role === 'SUPER_ADMIN') {
+          if (currentUser.role === 'FINANCE' || currentUser.role === 'SUPER_ADMIN') {
+            renderFinanceTable(globalRequestsData);
+          }
+          if (currentUser.role === 'HR' || currentUser.role === 'SUPER_ADMIN' || currentUser.role === 'DEPT_HEAD') {
+            renderAdminTable(globalRequestsData);
+          }
+          if (currentUser.role === 'HR' || currentUser.role === 'SUPER_ADMIN') {
             renderInventoryTable(globalInventoryData);
-            renderCharts();
           }
-          if(currentUser.role === 'SUPER_ADMIN') {
-             renderFinanceTable(globalRequestsData);
-          }
+          renderCharts();
         }
-      } catch (error) {
-         console.error("Dashboard Sync Error", error);
+      } else {
+        console.error("Dashboard Sync Error:", response.message);
       }
+    }
+
+    async function changeRequestStatus(reqId, newStatus) {
+      if(!confirm(`Mark this request as ${newStatus}?`)) return;
+      const actionUser = currentUser.user['COMPLETE NAME'] || currentUser.empId;
+      
+      const res = await gasApiCall('updateRequestStatus', {
+        requestId: reqId,
+        newStatus: newStatus,
+        actionBy: actionUser
+      });
+
+      if (res.success) {
+        document.getElementById('searchDb').value = ''; 
+        fetchDashboardData();
+      } else {
+        alert("Error: " + res.message);
+      }
+    }
+
+    async function saveEditedRequest() {
+      const reqId = document.getElementById('editReqId').value;
+      const type = document.getElementById('editReqType').value;
+      const consent = document.getElementById('editReqConsent').checked;
+      const statusMsg = document.getElementById('editStatusMsg');
+      const btn = document.getElementById('saveEditBtn');
+      const editUser = currentUser.user['COMPLETE NAME'] || currentUser.empId;
+      
+      const itemRows = document.querySelectorAll('#editItemsContainer .item-row');
+      const itemsToSubmit = [];
+      itemRows.forEach(row => {
+        const item = row.querySelector('.req-item-select').value;
+        const qty = row.querySelector('.req-item-qty').value;
+        if (item && qty > 0) itemsToSubmit.push({ uniform: item, qty: qty });
+      });
+
+      if (itemsToSubmit.length === 0) { statusMsg.innerText = "MUST HAVE AT LEAST ONE ITEM."; statusMsg.className = "text-gray-600 font-bold italic"; return; }
+      
+      btn.innerText = "SAVING..."; btn.disabled = true;
+      statusMsg.innerText = "UPDATING..."; statusMsg.className = "text-black font-bold tracking-wider uppercase";
+
+      const payload = {
+        requestId: reqId,
+        requestType: type,
+        consent: consent,
+        items: itemsToSubmit,
+        editedBy: editUser
+      };
+
+      const res = await gasApiCall('editRequestByHR', payload);
+      
+      btn.innerText = "SAVE CHANGES"; btn.disabled = false;
+      if (res.success) {
+        document.getElementById('searchDb').value = ''; 
+        closeEditModal(); 
+        fetchDashboardData();
+      } else {
+        statusMsg.innerText = res.message.toUpperCase(); 
+        statusMsg.className = "text-gray-600 font-bold italic";
+      }
+    }
+
+    async function submitRestock() {
+      const uniformCodeInput = document.getElementById('restockUniformId').value.trim();
+      const qty = parseInt(document.getElementById('restockQty').value);
+      const statusMsg = document.getElementById('restockStatusMsg');
+      const btn = document.getElementById('saveRestockBtn');
+      
+      if (!qty || qty <= 0) { statusMsg.innerText = "ENTER VALID QUANTITY."; statusMsg.className = "text-gray-600 font-bold italic"; return; }
+      
+      btn.innerText = "SAVING..."; btn.disabled = true;
+      statusMsg.innerText = "UPDATING DB..."; statusMsg.className = "text-black tracking-wider uppercase font-bold";
+
+      const res = await gasApiCall('restockUniform', { uniform: uniformCodeInput, qty: qty });
+      
+      btn.innerText = "ADD STOCK"; btn.disabled = false;
+      if (res.success) {
+        closeRestockModal(); 
+        fetchDashboardData();
+      } else {
+        statusMsg.innerText = res.message.toUpperCase(); 
+        statusMsg.className = "text-gray-600 font-bold italic";
+      }
+    }
+
+    async function submitFinanceTag() {
+      const reqId = document.getElementById('finReqId').value;
+      const period = document.getElementById('finPeriod').value;
+      const remarks = document.getElementById('finRemarks').value;
+      const statusMsg = document.getElementById('finStatusMsg');
+      const btn = document.getElementById('saveFinBtn');
+      
+      if (!period) { statusMsg.innerText = "PERIOD IS REQUIRED."; statusMsg.className = "text-gray-600 font-bold italic"; return; }
+      
+      btn.innerText = "SAVING..."; btn.disabled = true;
+      statusMsg.innerText = "TAGGING..."; statusMsg.className = "text-black tracking-wider uppercase font-bold";
+
+      const res = await gasApiCall('addFinanceTag', {
+        requestId: reqId,
+        period: period,
+        remarks: remarks,
+        taggedBy: currentUser.user['COMPLETE NAME']
+      });
+
+      btn.innerText = "ADD TAG"; btn.disabled = false;
+      if (res.success) {
+        document.getElementById('searchFin').value = ''; 
+        closeFinanceModal(); 
+        fetchDashboardData();
+      } else {
+        statusMsg.innerText = res.message.toUpperCase(); 
+        statusMsg.className = "text-gray-600 font-bold italic";
+      }
+    }
+
+    // =========================================================================
+    // RENDERING & UI HELPERS
+    // =========================================================================
+    function openEditModal(reqId) {
+      const req = globalRequestsData.find(r => r.RequestID === reqId);
+      if(!req) return;
+      if(req.Status === 'DELIVERED') { alert("Cannot edit a Delivered request to prevent inventory conflicts. Change it to PENDING first."); return; }
+      
+      document.getElementById('editReqId').value = req.RequestID;
+      document.getElementById('editReqIdLabel').innerText = req.RequestID;
+      document.getElementById('editReqType').value = req.RequestType;
+      
+      const isATD = (req.RequestType === 'ATD (Wear & Tear)' || req.RequestType === 'Maternity' || req.RequestType === 'Offboarding/Clearance');
+      const consentBox = document.getElementById('editConsentBox');
+      if (isATD) {
+        consentBox.classList.remove('hidden');
+        document.getElementById('editReqConsent').checked = (req.PayrollDeductConsent === 'YES');
+      } else {
+        consentBox.classList.add('hidden');
+        document.getElementById('editReqConsent').checked = false;
+      }
+      
+      const container = document.getElementById('editItemsContainer');
+      container.innerHTML = '';
+      req.RawItems.forEach(item => addItemRow('editItemsContainer', item.uniform, item.qty, true));
+      document.getElementById('editModal').classList.remove('hidden');
+    }
+
+    function closeEditModal() {
+      document.getElementById('editModal').classList.add('hidden');
+      document.getElementById('editStatusMsg').innerText = '';
+    }
+
+    function openRestockModal(uniformName) {
+      document.getElementById('restockUniformId').value = uniformName;
+      document.getElementById('restockItemName').innerText = uniformName;
+      document.getElementById('restockQty').value = "";
+      document.getElementById('restockModal').classList.remove('hidden');
+    }
+
+    function closeRestockModal() {
+      document.getElementById('restockModal').classList.add('hidden');
+      document.getElementById('restockStatusMsg').innerText = '';
+    }
+
+    function openFinanceModal(reqId) {
+      document.getElementById('finReqId').value = reqId;
+      document.getElementById('finPeriod').value = "";
+      document.getElementById('finRemarks').value = "";
+      document.getElementById('financeModal').classList.remove('hidden');
+    }
+
+    function closeFinanceModal() {
+      document.getElementById('financeModal').classList.add('hidden');
+      document.getElementById('finStatusMsg').innerText = '';
     }
 
     function renderCharts() {
@@ -973,269 +979,6 @@
         return textMatch && outletMatch;
       });
       renderFinanceTable(filtered);
-    }
-
-    async function adjustInventoryForDelivery(reqId, multiplier) {
-      const reqItems = globalLineItems.filter(l => String(l.RequestID).trim() === String(reqId).trim());
-      for (let item of reqItems) {
-        const targetUniformName = String(item.Uniform).trim().toLowerCase();
-        const qty = Number(item.Quantity) || 0;
-        const uniformRow = globalInventoryRaw.find(u => String(u.UNIFORM).trim().toLowerCase() === targetUniformName);
-        
-        if (uniformRow) {
-          const currentInv = Number(uniformRow.INVENTORY) || 0;
-          const newInv = currentInv + (qty * multiplier);
-          await fetch(`${STEIN_API_BASE}/UNIFORM%20LIST`, {
-            method: 'PUT',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              condition: { UNIFORM: uniformRow.UNIFORM },
-              set: { INVENTORY: newInv }
-            })
-          });
-        }
-      }
-    }
-
-    async function changeRequestStatus(reqId, newStatus) {
-      if(!confirm(`Mark this request as ${newStatus}?`)) return;
-      const actionUser = currentUser.user['COMPLETE NAME'] || currentUser.empId;
-      const timestampStr = new Date().toLocaleDateString() + " " + new Date().toLocaleTimeString();
-      const actionString = `${actionUser} (${timestampStr})`;
-
-      try {
-        const req = globalRequestsData.find(r => r.RequestID === reqId);
-        const oldStatus = req.Status;
-
-        if (oldStatus !== 'DELIVERED' && newStatus === 'DELIVERED') {
-          await adjustInventoryForDelivery(reqId, -1);
-        } else if (oldStatus === 'DELIVERED' && newStatus !== 'DELIVERED') {
-          await adjustInventoryForDelivery(reqId, 1);
-        }
-
-        await fetch(`${STEIN_API_BASE}/Requests`, {
-          method: 'PUT',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            condition: { RequestID: reqId },
-            set: { Status: newStatus, ActionBy: actionString }
-          })
-        });
-
-        document.getElementById('searchDb').value = ''; 
-        fetchDashboardData();
-      } catch(e) {
-        alert("Network Error: Could not update status.");
-      }
-    }
-
-    function openEditModal(reqId) {
-      const req = globalRequestsData.find(r => r.RequestID === reqId);
-      if(!req) return;
-      if(req.Status === 'DELIVERED') { alert("Cannot edit a Delivered request to prevent inventory conflicts. Change it to PENDING first."); return; }
-      
-      document.getElementById('editReqId').value = req.RequestID;
-      document.getElementById('editReqIdLabel').innerText = req.RequestID;
-      document.getElementById('editReqType').value = req.RequestType;
-      
-      const isATD = (req.RequestType === 'ATD (Wear & Tear)' || req.RequestType === 'Maternity' || req.RequestType === 'Offboarding/Clearance');
-      const consentBox = document.getElementById('editConsentBox');
-      if (isATD) {
-        consentBox.classList.remove('hidden');
-        document.getElementById('editReqConsent').checked = (req.PayrollDeductConsent === 'YES');
-      } else {
-        consentBox.classList.add('hidden');
-        document.getElementById('editReqConsent').checked = false;
-      }
-      
-      const container = document.getElementById('editItemsContainer');
-      container.innerHTML = '';
-      req.RawItems.forEach(item => addItemRow('editItemsContainer', item.uniform, item.qty, true));
-      document.getElementById('editModal').classList.remove('hidden');
-    }
-
-    function closeEditModal() {
-      document.getElementById('editModal').classList.add('hidden');
-      document.getElementById('editStatusMsg').innerText = '';
-    }
-
-    function toggleEditConsent() {
-      const type = document.getElementById('editReqType').value;
-      if (type === 'ATD (Wear & Tear)' || type === 'Maternity' || type === 'Offboarding/Clearance') document.getElementById('editConsentBox').classList.remove('hidden');
-      else { document.getElementById('editConsentBox').classList.add('hidden'); document.getElementById('editReqConsent').checked = false; }
-    }
-
-    async function saveEditedRequest() {
-      const reqId = document.getElementById('editReqId').value;
-      const type = document.getElementById('editReqType').value;
-      const consent = document.getElementById('editReqConsent').checked;
-      const statusMsg = document.getElementById('editStatusMsg');
-      const btn = document.getElementById('saveEditBtn');
-      const editUser = currentUser.user['COMPLETE NAME'] || currentUser.empId;
-      
-      const itemRows = document.querySelectorAll('#editItemsContainer .item-row');
-      const itemsToSubmit = [];
-      itemRows.forEach(row => {
-        const item = row.querySelector('.req-item-select').value;
-        const qty = row.querySelector('.req-item-qty').value;
-        if (item && qty > 0) itemsToSubmit.push({ uniform: item, qty: qty });
-      });
-
-      if (itemsToSubmit.length === 0) { statusMsg.innerText = "MUST HAVE AT LEAST ONE ITEM."; statusMsg.className = "text-gray-600 font-bold italic"; return; }
-      
-      btn.innerText = "SAVING..."; btn.disabled = true;
-      statusMsg.innerText = "UPDATING..."; statusMsg.className = "text-black font-bold tracking-wider uppercase";
-      
-      const costCat = determineCostCategory(type);
-      let totalCost = 0;
-      if (costCat !== 'ZERO_COST') {
-        itemsToSubmit.forEach(reqItem => {
-          const dbItem = globalInventoryRaw.find(i => String(i.UNIFORM).trim().toLowerCase() === String(reqItem.uniform).trim().toLowerCase());
-          if (dbItem) totalCost += (Number(dbItem.PRICE) * Number(reqItem.qty));
-        });
-      }
-
-      const timestampStr = new Date().toLocaleDateString() + " " + new Date().toLocaleTimeString();
-      const editString = `${editUser} (${timestampStr})`;
-
-      try {
-        // Update request row
-        await fetch(`${STEIN_API_BASE}/Requests`, {
-          method: 'PUT',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            condition: { RequestID: reqId },
-            set: {
-              RequestType: type, TotalCost: totalCost, CostCategory: costCat,
-              PayrollDeductConsent: consent ? 'YES' : 'NO', EditedBy: editString
-            }
-          })
-        });
-
-        // Delete old line items via Stein DELETE endpoint
-        await fetch(`${STEIN_API_BASE}/LineItems`, {
-          method: 'DELETE',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ condition: { RequestID: reqId } })
-        });
-
-        // Add new line items
-        const lineItemPayload = itemsToSubmit.map(item => ({
-          RequestID: reqId, Uniform: item.uniform, Quantity: item.qty
-        }));
-        await fetch(`${STEIN_API_BASE}/LineItems`, {
-          method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(lineItemPayload)
-        });
-
-        btn.innerText = "SAVE CHANGES"; btn.disabled = false;
-        document.getElementById('searchDb').value = ''; 
-        closeEditModal(); 
-        fetchDashboardData();
-      } catch (error) {
-        btn.innerText = "SAVE CHANGES"; btn.disabled = false;
-        statusMsg.innerText = "NETWORK ERROR. TRY AGAIN."; 
-        statusMsg.className = "text-gray-600 font-bold italic";
-      }
-    }
-
-    function openRestockModal(uniformName) {
-      document.getElementById('restockUniformId').value = uniformName;
-      document.getElementById('restockItemName').innerText = uniformName;
-      document.getElementById('restockQty').value = "";
-      document.getElementById('restockModal').classList.remove('hidden');
-    }
-
-    function closeRestockModal() {
-      document.getElementById('restockModal').classList.add('hidden');
-      document.getElementById('restockStatusMsg').innerText = '';
-    }
-
-    async function submitRestock() {
-      const uniformCodeInput = document.getElementById('restockUniformId').value.trim().toLowerCase();
-      const qty = parseInt(document.getElementById('restockQty').value);
-      const statusMsg = document.getElementById('restockStatusMsg');
-      const btn = document.getElementById('saveRestockBtn');
-      
-      if (!qty || qty <= 0) { statusMsg.innerText = "ENTER VALID QUANTITY."; statusMsg.className = "text-gray-600 font-bold italic"; return; }
-      
-      btn.innerText = "SAVING..."; btn.disabled = true;
-      statusMsg.innerText = "UPDATING DB..."; statusMsg.className = "text-black tracking-wider uppercase font-bold";
-      
-      try {
-        const uniformRow = globalInventoryRaw.find(u => String(u.UNIFORM).trim().toLowerCase() === uniformCodeInput);
-        if (!uniformRow) {
-           statusMsg.innerText = "UNIFORM NOT FOUND IN DB."; 
-           statusMsg.className = "text-gray-600 font-bold italic";
-           btn.innerText = "ADD STOCK"; btn.disabled = false;
-           return;
-        }
-
-        const currentStock = Number(uniformRow.INVENTORY) || 0;
-        const newStock = currentStock + qty;
-
-        await fetch(`${STEIN_API_BASE}/UNIFORM%20LIST`, {
-          method: 'PUT',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            condition: { UNIFORM: uniformRow.UNIFORM }, // use original casing for condition
-            set: { INVENTORY: newStock }
-          })
-        });
-
-        btn.innerText = "ADD STOCK"; btn.disabled = false;
-        closeRestockModal(); 
-        fetchDashboardData();
-      } catch (error) {
-        btn.innerText = "ADD STOCK"; btn.disabled = false;
-        statusMsg.innerText = "NETWORK ERROR. TRY AGAIN."; 
-        statusMsg.className = "text-gray-600 font-bold italic";
-      }
-    }
-
-    function openFinanceModal(reqId) {
-      document.getElementById('finReqId').value = reqId;
-      document.getElementById('finPeriod').value = "";
-      document.getElementById('finRemarks').value = "";
-      document.getElementById('financeModal').classList.remove('hidden');
-    }
-
-    function closeFinanceModal() {
-      document.getElementById('financeModal').classList.add('hidden');
-      document.getElementById('finStatusMsg').innerText = '';
-    }
-
-    async function submitFinanceTag() {
-      const reqId = document.getElementById('finReqId').value;
-      const period = document.getElementById('finPeriod').value;
-      const remarks = document.getElementById('finRemarks').value;
-      const statusMsg = document.getElementById('finStatusMsg');
-      const btn = document.getElementById('saveFinBtn');
-      
-      if (!period) { statusMsg.innerText = "PERIOD IS REQUIRED."; statusMsg.className = "text-gray-600 font-bold italic"; return; }
-      
-      btn.innerText = "SAVING..."; btn.disabled = true;
-      statusMsg.innerText = "TAGGING..."; statusMsg.className = "text-black tracking-wider uppercase font-bold";
-      
-      const timestampStr = new Date().toLocaleDateString() + " " + new Date().toLocaleTimeString();
-      const taggedString = `${currentUser.user['COMPLETE NAME']} (${timestampStr})`;
-
-      const payload = [{
-        RequestID: reqId, CapturedPeriod: period, Remarks: remarks, TaggedBy: taggedString
-      }];
-
-      try {
-        await fetch(`${STEIN_API_BASE}/FinanceTags`, {
-          method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload)
-        });
-        btn.innerText = "ADD TAG"; btn.disabled = false;
-        document.getElementById('searchFin').value = ''; 
-        closeFinanceModal(); 
-        fetchDashboardData();
-      } catch(e) {
-        btn.innerText = "ADD TAG"; btn.disabled = false;
-        statusMsg.innerText = "NETWORK ERROR. TRY AGAIN."; 
-        statusMsg.className = "text-gray-600 font-bold italic";
-      }
     }
 
     function getCostBadge(category) {
