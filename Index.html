@@ -1262,30 +1262,7 @@
       });
     }
 
-    function exportCSV() {
-      if(globalRequestsData.length === 0) return;
-      let csvContent = "data:text/csv;charset=utf-8,Date,Request ID,Employee ID,Employee Name,Outlet,Request Type,Cost Category,Total Cost,Status\n";
-      globalRequestsData.forEach(function(req) {
-        const ts = req.Timestamp ? String(req.Timestamp) : "";
-        const rId = req.RequestID ? String(req.RequestID) : "";
-        const eId = req.EmployeeID ? String(req.EmployeeID) : "";
-        const eName = req.EmployeeName ? String(req.EmployeeName).replace(/"/g, '""') : "";
-        const out = req.Outlet ? String(req.Outlet) : "";
-        const rType = req.RequestType ? String(req.RequestType) : "";
-        const cCat = req.CostCategory ? String(req.CostCategory) : "";
-        const tCost = req.TotalCost ? String(req.TotalCost) : "0";
-        const stat = req.Status ? String(req.Status) : "";
-        
-        const row = ['"' + ts + '"', rId, eId, '"' + eName + '"', out, rType, cCat, tCost, stat];
-        csvContent += row.join(",") + "\r\n";
-      });
-      const link = document.createElement("a");
-      link.setAttribute("href", encodeURI(csvContent));
-      link.setAttribute("download", "Uniform_Requests_Export.csv");
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-    }
+    
   </script>
 </body>
 </html>
