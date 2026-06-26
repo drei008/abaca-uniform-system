@@ -146,18 +146,36 @@
         <div class="w-full max-w-xs mx-auto">
           <canvas id="hrPieChart"></canvas>
         </div>
+        <p class="mt-4 text-center text-[10px] font-bold uppercase tracking-widest text-gray-500">Chart follows the filters below.</p>
       </div>
 
-      <div class="flex flex-col md:flex-row gap-4 mb-6 bg-gray-50 p-5 rounded-sm border border-gray-200">
-        <div class="flex-1">
+      <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6 bg-gray-50 p-5 rounded-sm border border-gray-200">
+        <div>
           <label class="text-[10px] font-bold text-black uppercase tracking-wider">Search</label>
-          <input type="text" id="searchDb" onkeyup="applyFilters()" placeholder="Search Name, Emp ID, or Request ID..." class="w-full px-3 py-2 mt-2 border border-gray-300 rounded-sm focus:ring-1 focus:ring-black focus:border-black outline-none">
+          <input type="text" id="searchDb" onkeyup="applyFilters()" placeholder="Search..." class="w-full px-3 py-2 mt-1 border border-gray-300 rounded-sm outline-none">
         </div>
-        <div class="md:w-1/3">
-          <label class="text-[10px] font-bold text-black uppercase tracking-wider">Filter by Outlet</label>
-          <select id="filterOutlet" onchange="applyFilters()" class="w-full px-3 py-2 mt-2 border border-gray-300 rounded-sm focus:ring-1 focus:ring-black focus:border-black outline-none">
-            <option value="ALL">All Outlets</option>
+        <div>
+          <label class="text-[10px] font-bold text-black uppercase tracking-wider">Outlet</label>
+          <select id="filterOutlet" onchange="applyFilters()" class="w-full px-3 py-2 mt-1 border border-gray-300 rounded-sm"><option value="ALL">All Outlets</option></select>
+        </div>
+        <div>
+          <label class="text-[10px] font-bold text-black uppercase tracking-wider">Status</label>
+          <select id="filterStatusDb" onchange="applyFilters()" class="w-full px-3 py-2 mt-1 border border-gray-300 rounded-sm">
+            <option value="ALL">All Statuses</option>
+            <option value="PENDING">Pending</option>
+            <option value="RELEASED">Released</option>
+            <option value="REJECTED">Rejected</option>
           </select>
+        </div>
+        <div class="grid grid-cols-2 gap-2">
+            <div>
+                <label class="text-[10px] font-bold text-black uppercase">From</label>
+                <input type="date" id="filterDateFromDb" onchange="applyFilters()" class="w-full px-2 py-2 border border-gray-300 rounded-sm">
+            </div>
+            <div>
+                <label class="text-[10px] font-bold text-black uppercase">To</label>
+                <input type="date" id="filterDateToDb" onchange="applyFilters()" class="w-full px-2 py-2 border border-gray-300 rounded-sm">
+            </div>
         </div>
       </div>
 
@@ -188,6 +206,22 @@
         <div class="w-full max-w-md mx-auto h-64">
           <canvas id="invMovementChart"></canvas>
         </div>
+        <p class="mt-4 text-center text-[10px] font-bold uppercase tracking-widest text-gray-500">Chart follows the filters below.</p>
+      </div>
+
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6 bg-gray-50 p-5 rounded-sm border border-gray-200">
+        <div>
+          <label class="text-[10px] font-bold text-black uppercase tracking-wider">From</label>
+          <input type="date" id="filterDateFromInv" onchange="applyFiltersInventory()" class="w-full px-3 py-2 mt-1 border border-gray-300 rounded-sm">
+        </div>
+        <div>
+          <label class="text-[10px] font-bold text-black uppercase tracking-wider">To</label>
+          <input type="date" id="filterDateToInv" onchange="applyFiltersInventory()" class="w-full px-3 py-2 mt-1 border border-gray-300 rounded-sm">
+        </div>
+        <div>
+          <label class="text-[10px] font-bold text-black uppercase tracking-wider">Status</label>
+          <select id="filterInventoryStatus" onchange="applyFiltersInventory()" class="w-full px-3 py-2 mt-1 border border-gray-300 rounded-sm"><option value="ALL">All Items</option><option value="LOW">Low Stock</option><option value="OPTIMAL">Optimal Stock</option></select>
+        </div>
       </div>
 
       <div class="overflow-x-auto">
@@ -215,18 +249,39 @@
         <div class="w-full max-w-2xl mx-auto h-64">
           <canvas id="finBarChart"></canvas>
         </div>
+        <p class="mt-4 text-center text-[10px] font-bold uppercase tracking-widest text-gray-500">Chart follows the filters below.</p>
       </div>
 
-      <div class="flex flex-col md:flex-row gap-4 mb-6 bg-gray-50 p-5 rounded-sm border border-gray-200">
+      <div class="grid grid-cols-1 md:grid-cols-5 gap-4 mb-6 bg-gray-50 p-5 rounded-sm border border-gray-200">
         <div class="flex-1">
           <label class="text-[10px] font-bold text-black uppercase tracking-wider">Search</label>
-          <input type="text" id="searchFin" onkeyup="applyFiltersFinance()" placeholder="Search Name, Emp ID, or Request ID..." class="w-full px-3 py-2 mt-2 border border-gray-300 rounded-sm focus:ring-1 focus:ring-black focus:border-black outline-none">
+          <input type="text" id="searchFin" onkeyup="applyFiltersFinance()" placeholder="Search..." class="w-full px-3 py-2 mt-2 border border-gray-300 rounded-sm outline-none">
         </div>
-        <div class="md:w-1/3">
-          <label class="text-[10px] font-bold text-black uppercase tracking-wider">Filter by Outlet</label>
-          <select id="filterOutletFin" onchange="applyFiltersFinance()" class="w-full px-3 py-2 mt-2 border border-gray-300 rounded-sm focus:ring-1 focus:ring-black focus:border-black outline-none">
+        <div>
+          <label class="text-[10px] font-bold text-black uppercase tracking-wider">Cost Tag</label>
+          <select id="filterCostTagFin" onchange="applyFiltersFinance()" class="w-full px-3 py-2 mt-2 border border-gray-300 rounded-sm"><option value="ALL">All Cost Tags</option><option value="PNL_EXPENSE">P&amp;L Expense</option><option value="PAYROLL_DEDUCT">Payroll Deduct</option><option value="ZERO_COST">Zero Cost</option></select>
+        </div>
+        <div>
+          <label class="text-[10px] font-bold text-black uppercase tracking-wider">Outlet</label>
+          <select id="filterOutletFin" onchange="applyFiltersFinance()" class="w-full px-3 py-2 mt-2 border border-gray-300 rounded-sm">
             <option value="ALL">All Outlets</option>
           </select>
+        </div>
+        <div>
+          <label class="text-[10px] font-bold text-black uppercase tracking-wider">Status</label>
+          <select id="filterStatusFin" onchange="applyFiltersFinance()" class="w-full px-3 py-2 mt-2 border border-gray-300 rounded-sm">
+            <option value="ALL">All Statuses</option>
+          </select>
+        </div>
+        <div class="grid grid-cols-2 gap-2 md:col-span-2">
+          <div>
+            <label class="text-[10px] font-bold text-black uppercase tracking-wider">From</label>
+            <input type="date" id="filterDateFromFin" onchange="applyFiltersFinance()" class="w-full px-2 py-2 mt-2 border border-gray-300 rounded-sm">
+          </div>
+          <div>
+            <label class="text-[10px] font-bold text-black uppercase tracking-wider">To</label>
+            <input type="date" id="filterDateToFin" onchange="applyFiltersFinance()" class="w-full px-2 py-2 mt-2 border border-gray-300 rounded-sm">
+          </div>
         </div>
       </div>
 
@@ -339,21 +394,19 @@
   </div>
 
   <script>
-    // =========================================================================
-    // THE API BRIDGE
-    // =========================================================================
     const GAS_API_URL = "https://script.google.com/macros/s/AKfycby0vzc8l2S4NZ9eKCdzxixOmsmvygJhy4WHvsMDynpDij2esh4Cf9-FK-JCvwP4-sjW7w/exec";
     
     let currentUser = null;
     let globalRequestsData = [];
+    let globalFinanceData = [];
     let globalUniformsList = [];
     let globalInventoryData = [];
+    let filterMetadata = null;
     
     let hrPieChartObj = null;
     let finBarChartObj = null;
     let invMovementChartObj = null;
 
-    // A unified helper to send requests to your Google Apps Script backend
     async function gasApiCall(actionName, payloadData) {
       try {
         const response = await fetch(GAS_API_URL, {
@@ -368,9 +421,6 @@
       }
     }
 
-    // =========================================================================
-    // AUTHENTICATION
-    // =========================================================================
     async function attemptLogin() {
       const empId = document.getElementById('empIdInput').value.trim();
       const pin = document.getElementById('pinInput').value.trim();
@@ -447,8 +497,10 @@
     function logout() {
       currentUser = null;
       globalRequestsData = [];
+      globalFinanceData = [];
       globalUniformsList = [];
       globalInventoryData = [];
+      filterMetadata = null;
       document.getElementById('empIdInput').value = "";
       document.getElementById('pinInput').value = "";
       document.getElementById('proxyEmpId').value = "";
@@ -463,9 +515,6 @@
       if(invMovementChartObj) invMovementChartObj.destroy();
     }
 
-    // =========================================================================
-    // UI NAVIGATION & FORMS
-    // =========================================================================
     function resetFormUI() {
       document.getElementById('reqStatusMsg').innerText = "";
       document.getElementById('reqType').value = "";
@@ -473,6 +522,41 @@
       toggleProxyMode();
       document.getElementById('consentBox').classList.add('hidden');
       document.getElementById('reqConsent').checked = false;
+    }
+
+    function parseMMDDYYYY(value) {
+      if (!value) return null;
+      if (/^\d{4}-\d{2}-\d{2}/.test(value)) {
+        const date = new Date(value);
+        return Number.isNaN(date.getTime()) ? null : date;
+      }
+      const match = String(value).trim().match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})/);
+      if (!match) return null;
+      const date = new Date(Number(match[3]), Number(match[1]) - 1, Number(match[2]));
+      return Number.isNaN(date.getTime()) ? null : date;
+    }
+
+    function formatDisplayDate(value) {
+      if (!value) return "N/A";
+      const parsed = parseMMDDYYYY(value) || new Date(value);
+      if (Number.isNaN(parsed.getTime())) return value;
+      return parsed.toLocaleDateString('en-US', { year: 'numeric', month: '2-digit', day: '2-digit' });
+    }
+
+    function escapeHtml(value) {
+      return String(value ?? '')
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;');
+    }
+
+    function renderListLines(values, emptyLabel) {
+      if (!values || values.length === 0) {
+        return `<span class="text-gray-400 text-xs italic">${emptyLabel}</span>`;
+      }
+      return values.map(value => escapeHtml(value)).join('<br>');
     }
 
     function switchTab(tabId) {
@@ -578,9 +662,6 @@
       container.appendChild(row);
     }
 
-    // =========================================================================
-    // BACKEND ACTIONS
-    // =========================================================================
     async function processRequest() {
       const isProxy = document.getElementById('isProxyRequest') ? document.getElementById('isProxyRequest').checked : false;
       let type = "";
@@ -656,21 +737,119 @@
         renderHistoryTable(response.myHistory || []);
 
         if (['FINANCE', 'HR', 'SUPER_ADMIN', 'DEPT_HEAD'].includes(currentUser.role)) {
-          populateOutletDropdowns();
-          if (currentUser.role === 'FINANCE' || currentUser.role === 'SUPER_ADMIN') {
-            renderFinanceTable(globalRequestsData);
-          }
-          if (currentUser.role === 'HR' || currentUser.role === 'SUPER_ADMIN' || currentUser.role === 'DEPT_HEAD') {
-            renderAdminTable(globalRequestsData);
-          }
-          if (currentUser.role === 'HR' || currentUser.role === 'SUPER_ADMIN') {
-            renderInventoryTable(globalInventoryData);
-          }
-          renderCharts();
+          await loadFilterMetadata();
+          await refreshManagedViews();
         }
       } else {
         console.error("Dashboard Sync Error:", response.message);
       }
+    }
+
+    async function loadFilterMetadata() {
+      const response = await gasApiCall('getFilterMetadata', {});
+      if (!response.success) {
+        console.error("Filter Metadata Error:", response.message);
+        return;
+      }
+      filterMetadata = response;
+      populateFilterDropdowns();
+    }
+
+    function populateSelect(selectId, values, defaultLabel, preserveCurrent = true) {
+      const select = document.getElementById(selectId);
+      if (!select) return;
+      const previousValue = preserveCurrent ? select.value : 'ALL';
+      select.innerHTML = '';
+
+      const defaultOption = document.createElement('option');
+      defaultOption.value = 'ALL';
+      defaultOption.textContent = defaultLabel;
+      select.appendChild(defaultOption);
+
+      (values || []).forEach(value => {
+        const option = document.createElement('option');
+        option.value = value;
+        option.textContent = getFilterLabel(value);
+        select.appendChild(option);
+      });
+
+      if ([...select.options].some(option => option.value === previousValue)) {
+        select.value = previousValue;
+      }
+    }
+
+    function getFilterLabel(value) {
+      const labels = {
+        PNL_EXPENSE: 'P&L Expense',
+        PAYROLL_DEDUCT: 'Payroll Deduct',
+        ZERO_COST: 'Zero Cost',
+        PENDING: 'Pending',
+        RELEASED: 'Released',
+        REJECTED: 'Rejected',
+        LOW: 'Low Stock',
+        OPTIMAL: 'Optimal Stock'
+      };
+      if (labels[value]) return labels[value];
+      return String(value || '')
+        .replace(/_/g, ' ')
+        .replace(/\b\w/g, char => char.toUpperCase());
+    }
+
+    function populateFilterDropdowns() {
+      if (!filterMetadata) return;
+      populateSelect('filterOutlet', filterMetadata.outlets, 'All Outlets');
+      populateSelect('filterOutletFin', filterMetadata.outlets, 'All Outlets');
+      populateSelect('filterStatusDb', filterMetadata.statuses, 'All Statuses');
+      populateSelect('filterStatusFin', filterMetadata.statuses, 'All Statuses');
+      populateSelect('filterCostTagFin', filterMetadata.costTags, 'All Cost Tags');
+      populateSelect('filterInventoryStatus', filterMetadata.inventoryStatuses, 'All Items');
+    }
+
+    function collectMasterFilters() {
+      return {
+        outlet: document.getElementById('filterOutlet')?.value || 'ALL',
+        status: document.getElementById('filterStatusDb')?.value || 'ALL',
+        dateFrom: document.getElementById('filterDateFromDb')?.value || '',
+        dateTo: document.getElementById('filterDateToDb')?.value || ''
+      };
+    }
+
+    function collectFinanceFilters() {
+      return {
+        outlet: document.getElementById('filterOutletFin')?.value || 'ALL',
+        status: document.getElementById('filterStatusFin')?.value || 'ALL',
+        costTag: document.getElementById('filterCostTagFin')?.value || 'ALL',
+        dateFrom: document.getElementById('filterDateFromFin')?.value || '',
+        dateTo: document.getElementById('filterDateToFin')?.value || ''
+      };
+    }
+
+    function collectInventoryFilters() {
+      return {
+        status: document.getElementById('filterInventoryStatus')?.value || 'ALL',
+        dateFrom: document.getElementById('filterDateFromInv')?.value || '',
+        dateTo: document.getElementById('filterDateToInv')?.value || ''
+      };
+    }
+
+    function applySearchFilter(rows, search, fields) {
+      const query = String(search || '').trim().toLowerCase();
+      if (!query) return rows;
+      return rows.filter(row => fields.some(field => String(row[field] || '').toLowerCase().includes(query)));
+    }
+
+    async function refreshManagedViews() {
+      const tasks = [];
+      if (currentUser.role === 'FINANCE' || currentUser.role === 'SUPER_ADMIN') {
+        tasks.push(applyFiltersFinance());
+      }
+      if (currentUser.role === 'HR' || currentUser.role === 'SUPER_ADMIN' || currentUser.role === 'DEPT_HEAD') {
+        tasks.push(applyFilters());
+      }
+      if (currentUser.role === 'HR' || currentUser.role === 'SUPER_ADMIN') {
+        tasks.push(applyFiltersInventory());
+      }
+      await Promise.all(tasks);
     }
 
     async function changeRequestStatus(reqId, newStatus) {
@@ -786,9 +965,6 @@
       }
     }
 
-    // =========================================================================
-    // RENDERING & UI HELPERS
-    // =========================================================================
     function openEditModal(reqId) {
       const req = globalRequestsData.find(r => r.RequestID === reqId);
       if(!req) return;
@@ -843,23 +1019,28 @@
       document.getElementById('finStatusMsg').innerText = '';
     }
 
-    function renderCharts() {
-      if ((currentUser.role === 'HR' || currentUser.role === 'SUPER_ADMIN') && document.getElementById('hrPieChart')) {
+    async function updateChart(chartId) {
+      const filters = chartId === 'hr'
+        ? collectMasterFilters()
+        : chartId === 'fin'
+          ? collectFinanceFilters()
+          : collectInventoryFilters();
+
+      const response = await gasApiCall('getChartData', { chartId, filters });
+      if (!response.success) {
+        console.error("Chart Error:", response.message);
+        return;
+      }
+
+      if (chartId === 'hr') {
         const ctxPie = document.getElementById('hrPieChart').getContext('2d');
-        let pending = 0, released = 0, rejected = 0;
-        globalRequestsData.forEach(r => {
-          if(r.Status === 'PENDING') pending++;
-          else if(r.Status === 'RELEASED') released++;
-          else if(r.Status === 'REJECTED') rejected++;
-        });
-        
-        if(hrPieChartObj) hrPieChartObj.destroy();
+        if (hrPieChartObj) hrPieChartObj.destroy();
         hrPieChartObj = new Chart(ctxPie, {
           type: 'doughnut',
           data: {
-            labels: ['Pending', 'Released', 'Rejected'],
+            labels: response.labels,
             datasets: [{
-              data: [pending, released, rejected],
+              data: response.datasets[0].data,
               backgroundColor: ['#E5E7EB', '#000000', '#9CA3AF'],
               borderWidth: 0
             }]
@@ -868,28 +1049,20 @@
         });
       }
 
-      if ((currentUser.role === 'HR' || currentUser.role === 'SUPER_ADMIN') && document.getElementById('invMovementChart') && globalInventoryData) {
+      if (chartId === 'inv') {
         const ctxInv = document.getElementById('invMovementChart').getContext('2d');
-        
-        const filteredInv = globalInventoryData.filter(item => item.TOTAL_RELEASED >= 1);
-        let sortedInv = [...filteredInv].sort((a,b) => b.TOTAL_RELEASED - a.TOTAL_RELEASED);
-
-        let labels = sortedInv.map(i => i.UNIFORM);
-        let dataReleased = sortedInv.map(i => i.TOTAL_RELEASED);
-
-        let bgColors = sortedInv.map((_, i) => {
-           let lightness = Math.max(10, 10 + (i * (80 / Math.max(1, sortedInv.length))));
-           return `hsl(0, 0%, ${lightness}%)`;
+        const bgColors = response.labels.map((_, index) => {
+          const lightness = Math.max(10, 10 + (index * (80 / Math.max(1, response.labels.length))));
+          return `hsl(0, 0%, ${lightness}%)`;
         });
-
-        if(invMovementChartObj) invMovementChartObj.destroy();
+        if (invMovementChartObj) invMovementChartObj.destroy();
         invMovementChartObj = new Chart(ctxInv, {
           type: 'doughnut',
           data: {
-            labels: labels,
+            labels: response.labels,
             datasets: [{
-              label: 'Total Items Released',
-              data: dataReleased,
+              label: response.datasets[0].label,
+              data: response.datasets[0].data,
               backgroundColor: bgColors,
               borderWidth: 1,
               borderColor: '#ffffff'
@@ -899,42 +1072,21 @@
             responsive: true,
             maintainAspectRatio: false,
             cutout: '58%',
-            plugins: {
-              legend: { position: 'right', labels: { boxWidth: 12 } }
-            }
+            plugins: { legend: { position: 'right', labels: { boxWidth: 12 } } }
           }
         });
       }
 
-      if ((currentUser.role === 'FINANCE' || currentUser.role === 'SUPER_ADMIN') && document.getElementById('finBarChart')) {
+      if (chartId === 'fin') {
         const ctxBar = document.getElementById('finBarChart').getContext('2d');
-        const outletTotals = {};
-        const outletLabels = {};
-        
-        globalRequestsData.forEach(r => {
-          if (r.CostCategory === 'COMPANY_EXPENSE_PNL') {
-            const rawOutlet = String(r.Outlet || 'Unknown').trim();
-            const outletKey = rawOutlet.toLowerCase();
-            const displayOutlet = rawOutlet || 'Unknown';
-
-            if (!outletTotals[outletKey]) outletTotals[outletKey] = 0;
-            if (!outletLabels[outletKey]) outletLabels[outletKey] = displayOutlet;
-
-            outletTotals[outletKey] += Number(r.TotalCost) || 0;
-          }
-        });
-        
-        const labels = Object.keys(outletTotals).map(key => outletLabels[key]);
-        const data = Object.keys(outletTotals).map(key => outletTotals[key]);
-        
-        if(finBarChartObj) finBarChartObj.destroy();
+        if (finBarChartObj) finBarChartObj.destroy();
         finBarChartObj = new Chart(ctxBar, {
           type: 'bar',
           data: {
-            labels: labels,
+            labels: response.labels,
             datasets: [{
-              label: 'Total P&L Expense (₱)',
-              data: data,
+              label: response.datasets[0].label,
+              data: response.datasets[0].data,
               backgroundColor: '#000000',
               borderRadius: 2
             }]
@@ -948,37 +1100,43 @@
       }
     }
 
-    function populateOutletDropdowns() {
-      const uniqueOutlets = [...new Set(globalRequestsData.map(req => req.Outlet))].sort();
-      const dbSelect = document.getElementById('filterOutlet');
-      dbSelect.innerHTML = '<option value="ALL">All Outlets</option>';
-      uniqueOutlets.forEach(out => { if(out) dbSelect.innerHTML += `<option value="${out}">${out}</option>`; });
-      
-      const finSelect = document.getElementById('filterOutletFin');
-      finSelect.innerHTML = '<option value="ALL">All Outlets</option>';
-      uniqueOutlets.forEach(out => { if(out) finSelect.innerHTML += `<option value="${out}">${out}</option>`; });
+    async function applyFilters() {
+      const response = await gasApiCall('getMasterDatabase', { filters: collectMasterFilters() });
+      if (!response.success) {
+        console.error("Master Database Error:", response.message);
+        return;
+      }
+      globalRequestsData = response.rows || [];
+      const filteredRows = applySearchFilter(globalRequestsData, document.getElementById('searchDb')?.value, ['RequestID', 'EmployeeID', 'EmployeeName', 'RequestType', 'Outlet']);
+      renderAdminTable(filteredRows);
+      if (currentUser.role === 'HR' || currentUser.role === 'SUPER_ADMIN') {
+        await updateChart('hr');
+      }
     }
 
-    function applyFilters() {
-      const search = document.getElementById('searchDb').value.toLowerCase();
-      const outlet = document.getElementById('filterOutlet').value;
-      const filtered = globalRequestsData.filter(req => {
-        const textMatch = (req.EmployeeName.toLowerCase().includes(search) || String(req.EmployeeID).includes(search) || req.RequestID.toLowerCase().includes(search));
-        const outletMatch = (outlet === 'ALL' || req.Outlet === outlet);
-        return textMatch && outletMatch;
-      });
-      renderAdminTable(filtered);
+    async function applyFiltersFinance() {
+      const response = await gasApiCall('getFinanceLedger', { filters: collectFinanceFilters() });
+      if (!response.success) {
+        console.error("Finance Ledger Error:", response.message);
+        return;
+      }
+      globalFinanceData = response.rows || [];
+      const filteredRows = applySearchFilter(globalFinanceData, document.getElementById('searchFin')?.value, ['RequestID', 'EmployeeID', 'EmployeeName', 'RequestType', 'Outlet']);
+      renderFinanceTable(filteredRows);
+      if (currentUser.role === 'FINANCE' || currentUser.role === 'SUPER_ADMIN') {
+        await updateChart('fin');
+      }
     }
 
-    function applyFiltersFinance() {
-      const search = document.getElementById('searchFin').value.toLowerCase();
-      const outlet = document.getElementById('filterOutletFin').value;
-      const filtered = globalRequestsData.filter(req => {
-        const textMatch = (req.EmployeeName.toLowerCase().includes(search) || String(req.EmployeeID).includes(search) || req.RequestID.toLowerCase().includes(search));
-        const outletMatch = (outlet === 'ALL' || req.Outlet === outlet);
-        return textMatch && outletMatch;
-      });
-      renderFinanceTable(filtered);
+    async function applyFiltersInventory() {
+      const response = await gasApiCall('getLiveInventory', { filters: collectInventoryFilters() });
+      if (!response.success) {
+        console.error("Inventory Error:", response.message);
+        return;
+      }
+      globalInventoryData = response.rows || [];
+      renderInventoryTable(globalInventoryData);
+      await updateChart('inv');
     }
 
     function getCostBadge(category) {
@@ -996,9 +1154,9 @@
 
     function buildAuditHtml(req) {
       let html = '';
-      if (req.InitiatedBy) html += `<span class="text-[9px] text-gray-600 block mt-2 leading-tight font-bold uppercase tracking-wider">Init: ${req.InitiatedBy}</span>`;
-      if (req.ActionBy) html += `<span class="text-[9px] text-gray-400 block leading-tight uppercase tracking-wider">Act: ${req.ActionBy}</span>`;
-      if (req.EditedBy) html += `<span class="text-[9px] text-gray-400 block leading-tight uppercase tracking-wider">Edit: ${req.EditedBy}</span>`;
+      if (req.InitiatedBy) html += `<span class="text-[9px] text-gray-600 block mt-2 leading-tight font-bold uppercase tracking-wider">Init: ${escapeHtml(req.InitiatedBy)}</span>`;
+      if (req.ActionBy) html += `<span class="text-[9px] text-gray-400 block leading-tight uppercase tracking-wider">Act: ${escapeHtml(req.ActionBy)}</span>`;
+      if (req.EditedBy) html += `<span class="text-[9px] text-gray-400 block leading-tight uppercase tracking-wider">Edit: ${escapeHtml(req.EditedBy)}</span>`;
       return html;
     }
 
@@ -1009,7 +1167,7 @@
       requests.forEach(req => {
         const tr = document.createElement('tr');
         tr.className = "border-b border-gray-200 hover:bg-gray-50 transition";
-        tr.innerHTML = `<td class="p-4 text-xs text-gray-500">${req.Timestamp || "N/A"}</td> <td class="p-4 text-sm">${req.RequestType}</td> <td class="p-4 text-sm font-bold text-black leading-tight">${req.ItemsListHtml}</td> <td class="p-4">${getCostBadge(req.CostCategory)}</td> <td class="p-4 text-sm font-bold text-black">₱${req.TotalCost}</td> <td class="p-4">${getStatusBadge(req.Status)}${buildAuditHtml(req)}</td>`;
+        tr.innerHTML = `<td class="p-4 text-xs text-gray-500">${formatDisplayDate(req.Timestamp)}</td> <td class="p-4 text-sm">${escapeHtml(req.RequestType)}</td> <td class="p-4 text-sm font-bold text-black leading-tight">${renderListLines(req.ItemsList, 'No items')}</td> <td class="p-4">${getCostBadge(req.CostCategory)}</td> <td class="p-4 text-sm font-bold text-black">₱${Number(req.TotalCost || 0).toLocaleString()}</td> <td class="p-4">${getStatusBadge(req.Status)}${buildAuditHtml(req)}</td>`;
         tbody.appendChild(tr);
       });
     }
@@ -1031,7 +1189,7 @@
         }
         const tr = document.createElement('tr');
         tr.className = "border-b border-gray-200 hover:bg-gray-50 transition";
-        tr.innerHTML = `<td class="p-4 text-[11px] text-gray-500">${req.Timestamp || "N/A"}</td> <td class="p-4 text-sm"><strong class="text-black">${req.EmployeeID}</strong><br><span class="text-xs text-gray-500 uppercase tracking-wider">${req.EmployeeName}</span></td> <td class="p-4 text-sm">${req.Outlet}</td> <td class="p-4 text-sm font-bold text-black leading-tight">${req.ItemsListHtml}</td> <td class="p-4 text-sm font-bold text-black">₱${req.TotalCost}</td> <td class="p-4 text-center">${getStatusBadge(req.Status)}${buildAuditHtml(req)}</td> <td class="p-4 leading-tight text-xs">${req.FinanceTagsHtml}</td> <td class="p-4 text-center">${actionsHtml}</td>`;
+        tr.innerHTML = `<td class="p-4 text-[11px] text-gray-500">${formatDisplayDate(req.Timestamp)}</td> <td class="p-4 text-sm"><strong class="text-black">${escapeHtml(req.EmployeeID)}</strong><br><span class="text-xs text-gray-500 uppercase tracking-wider">${escapeHtml(req.EmployeeName)}</span></td> <td class="p-4 text-sm">${escapeHtml(req.Outlet)}</td> <td class="p-4 text-sm font-bold text-black leading-tight">${renderListLines(req.ItemsList, 'No items')}</td> <td class="p-4 text-sm font-bold text-black">₱${Number(req.TotalCost || 0).toLocaleString()}</td> <td class="p-4 text-center">${getStatusBadge(req.Status)}${buildAuditHtml(req)}</td> <td class="p-4 leading-tight text-xs">${renderListLines(req.FinanceTags, 'Unprocessed')}</td> <td class="p-4 text-center">${actionsHtml}</td>`;
         tbody.appendChild(tr);
       });
     }
@@ -1049,7 +1207,7 @@
         }
         const tr = document.createElement('tr');
         tr.className = "border-b border-gray-200 hover:bg-gray-50 transition";
-        tr.innerHTML = `<td class="p-4 text-[11px] text-gray-500">${req.Timestamp || "N/A"}</td> <td class="p-4 text-sm"><strong class="text-black">${req.EmployeeID}</strong><br><span class="text-xs text-gray-500 uppercase tracking-wider">${req.EmployeeName}</span></td> <td class="p-4 text-sm font-bold text-black leading-tight">${req.ItemsListHtml}</td> <td class="p-4">${getCostBadge(req.CostCategory)}</td> <td class="p-4 text-sm font-bold text-black">₱${req.TotalCost}</td> <td class="p-4 text-center">${getStatusBadge(req.Status)}${buildAuditHtml(req)}</td> <td class="p-4 leading-tight text-xs">${req.FinanceTagsHtml}</td> <td class="p-4 text-center">${actionBtn}</td>`;
+        tr.innerHTML = `<td class="p-4 text-[11px] text-gray-500">${formatDisplayDate(req.Timestamp)}</td> <td class="p-4 text-sm"><strong class="text-black">${escapeHtml(req.EmployeeID)}</strong><br><span class="text-xs text-gray-500 uppercase tracking-wider">${escapeHtml(req.EmployeeName)}</span></td> <td class="p-4 text-sm font-bold text-black leading-tight">${renderListLines(req.ItemsList, 'No items')}</td> <td class="p-4">${getCostBadge(req.CostCategory)}</td> <td class="p-4 text-sm font-bold text-black">₱${Number(req.TotalCost || 0).toLocaleString()}</td> <td class="p-4 text-center">${getStatusBadge(req.Status)}${buildAuditHtml(req)}</td> <td class="p-4 leading-tight text-xs">${renderListLines(req.FinanceTags, 'Unprocessed')}</td> <td class="p-4 text-center">${actionBtn}</td>`;
         tbody.appendChild(tr);
       });
     }
@@ -1057,16 +1215,19 @@
     function renderInventoryTable(inventory) {
       const tbody = document.getElementById('inventoryTableBody');
       tbody.innerHTML = '';
-      if(inventory.length === 0) return;
+      if(inventory.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="6" class="p-6 text-center text-gray-400 uppercase tracking-widest text-xs font-bold">No inventory items found.</td></tr>`;
+        return;
+      }
       inventory.forEach(item => {
         let statusBadge = `<span class="bg-gray-200 text-black px-3 py-1 rounded-sm text-[10px] font-bold uppercase tracking-widest">OPTIMAL</span>`;
         let rowClass = "border-b border-gray-200 hover:bg-gray-50 transition";
         
-        if (item.AVAILABLE_STOCK > item.BASE_STOCK && item.BASE_STOCK > 0) {
-          statusBadge = `<span class="bg-white border border-black text-black px-3 py-1 rounded-sm text-[10px] font-bold uppercase tracking-widest">OVERSTOCK</span>`;
-        } else if (item.AVAILABLE_STOCK <= 5) {
+        if (item.DerivedStatus === 'LOW') {
           statusBadge = `<span class="bg-black text-white px-3 py-1 rounded-sm text-[10px] font-bold uppercase tracking-widest animate-pulse">LOW STOCK</span>`;
           rowClass = "border-b border-gray-200 bg-gray-100";
+        } else if (item.AVAILABLE_STOCK > item.BASE_STOCK && item.BASE_STOCK > 0) {
+          statusBadge = `<span class="bg-white border border-black text-black px-3 py-1 rounded-sm text-[10px] font-bold uppercase tracking-widest">OVERSTOCK</span>`;
         }
         
         const tr = document.createElement('tr');
@@ -1089,7 +1250,7 @@
       if(globalRequestsData.length === 0) return;
       let csvContent = "data:text/csv;charset=utf-8,Date,Request ID,Employee ID,Employee Name,Outlet,Request Type,Cost Category,Total Cost,Status\n";
       globalRequestsData.forEach(function(req) {
-        csvContent += [`"${req.Timestamp}"`, req.RequestID, req.EmployeeID, `"${req.EmployeeName}"`, req.Outlet, req.RequestType, req.CostCategory, req.TotalCost, req.Status].join(",") + "\r\n";
+        csvContent += [`"${formatDisplayDate(req.Timestamp)}"`, req.RequestID, req.EmployeeID, `"${req.EmployeeName}"`, req.Outlet, req.RequestType, req.CostCategory, req.TotalCost, req.Status].join(",") + "\r\n";
       });
       const link = document.createElement("a");
       link.setAttribute("href", encodeURI(csvContent));
