@@ -7,8 +7,8 @@
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
-<body class="bg-gray-50 text-gray-900 font-sans min-h-screen">
-  
+<body class="bg-gray-50 text-gray-900 font-sans min-h-screen relative overflow-x-hidden">
+
   <div id="loginScreen" class="flex items-center justify-center min-h-screen">
     <div class="bg-white p-8 rounded-sm shadow-md border border-gray-200 w-full max-w-md">
       <div class="text-center mb-8">
@@ -28,24 +28,26 @@
     </div>
   </div>
 
-  <div id="dashboardScreen" class="hidden max-w-6xl mx-auto p-6">
-    <div class="bg-white rounded-sm shadow-sm p-6 mb-6 flex flex-col md:flex-row justify-between items-center border-t-4 border-black">
-      <div class="mb-4 md:mb-0">
-        <h1 class="text-2xl font-bold text-black">Welcome, <span id="uiName" class="text-gray-600 font-medium"></span></h1>
-        <p class="text-gray-500 mt-2 text-sm">
-          <span class="font-bold bg-gray-200 text-black px-2 py-1 rounded-sm mr-2" id="uiRole"></span>
-          Dept: <span id="uiDept" class="font-medium text-black"></span> | Outlet: <span id="uiOutlet" class="font-medium text-black"></span>
-        </p>
+  <div id="dashboardScreen" class="hidden max-w-8xl mx-auto p-6">
+    <div class="sticky top-0 z-30 -mx-6 px-6 pt-6 pb-4 mb-8 bg-gray-50/95 backdrop-blur-sm">
+      <div class="bg-black rounded-sm shadow-sm p-6 mb-4 flex flex-col md:flex-row justify-between items-center border border-gray-800">
+        <div class="mb-4 md:mb-0">
+          <h1 class="text-2xl font-bold text-white">Welcome, <span id="uiName" class="text-gray-200 font-medium"></span></h1>
+          <p class="text-gray-300 mt-2 text-sm">
+            <span class="font-bold bg-white text-black px-2 py-1 rounded-sm mr-2" id="uiRole"></span>
+            Dept: <span id="uiDept" class="font-medium text-white"></span> | Outlet: <span id="uiOutlet" class="font-medium text-white"></span>
+          </p>
+        </div>
+        <button onclick="logout()" class="bg-gray-200 hover:bg-gray-300 border border-gray-300 text-black px-6 py-2 rounded-sm font-bold transition text-sm uppercase tracking-wider">Log Out</button>
       </div>
-      <button onclick="logout()" class="bg-white hover:bg-gray-100 border border-gray-300 text-black px-6 py-2 rounded-sm font-bold transition text-sm uppercase tracking-wider">Log Out</button>
-    </div>
 
-    <div id="tabNavigation" class="flex space-x-4 border-b border-gray-300 mb-8 px-2 hidden">
-      <button id="btnTab-request" onclick="switchTab('request')" class="py-2 px-4 text-black border-b-2 border-black font-bold focus:outline-none transition uppercase text-sm tracking-wider">Submit Request</button>
-      <button id="btnTab-history" onclick="switchTab('history')" class="hidden py-2 px-4 text-gray-400 hover:text-black font-bold focus:outline-none transition uppercase text-sm tracking-wider">My Requests</button>
-      <button id="btnTab-database" onclick="switchTab('database')" class="hidden py-2 px-4 text-gray-400 hover:text-black font-bold focus:outline-none transition uppercase text-sm tracking-wider">Master Database</button>
-      <button id="btnTab-inventory" onclick="switchTab('inventory')" class="hidden py-2 px-4 text-gray-400 hover:text-black font-bold focus:outline-none transition uppercase text-sm tracking-wider">Live Inventory</button>
-      <button id="btnTab-finance" onclick="switchTab('finance')" class="hidden py-2 px-4 text-gray-400 hover:text-black font-bold focus:outline-none transition uppercase text-sm tracking-wider">Finance Ledger</button>
+      <div id="tabNavigation" class="flex space-x-4 border-b border-gray-300 px-2 hidden bg-transparent">
+        <button id="btnTab-request" onclick="switchTab('request')" class="py-2 px-4 text-black border-b-2 border-black font-bold focus:outline-none transition uppercase text-sm tracking-wider">Submit Request</button>
+        <button id="btnTab-history" onclick="switchTab('history')" class="hidden py-2 px-4 text-gray-400 hover:text-black font-bold focus:outline-none transition uppercase text-sm tracking-wider">My Requests</button>
+        <button id="btnTab-database" onclick="switchTab('database')" class="hidden py-2 px-4 text-gray-400 hover:text-black font-bold focus:outline-none transition uppercase text-sm tracking-wider">Master Database</button>
+        <button id="btnTab-inventory" onclick="switchTab('inventory')" class="hidden py-2 px-4 text-gray-400 hover:text-black font-bold focus:outline-none transition uppercase text-sm tracking-wider">Live Inventory</button>
+        <button id="btnTab-finance" onclick="switchTab('finance')" class="hidden py-2 px-4 text-gray-400 hover:text-black font-bold focus:outline-none transition uppercase text-sm tracking-wider">Finance Ledger</button>
+      </div>
     </div>
 
     <div id="section-request" class="bg-white rounded-sm shadow-sm p-8 border border-gray-200 hidden">
@@ -183,15 +185,15 @@
         <table class="w-full text-left border-collapse">
           <thead>
             <tr class="bg-gray-100 text-black uppercase text-[10px] tracking-wider border-b border-gray-300">
-              <th class="p-3 border-r border-gray-200">Date</th>
-              <th class="p-3 border-r border-gray-200">ID & Name</th>
-              <th class="p-3 border-r border-gray-200">Outlet</th>
-              <th class="p-3 border-r border-gray-200">Type</th>
-              <th class="p-3 border-r border-gray-200">Items Requested</th>
-              <th class="p-3 border-r border-gray-200">Total (₱)</th>
-              <th class="p-3 border-r border-gray-200 text-center">Status</th>
-              <th class="p-3 border-r border-gray-200">Finance Processing</th>
-              <th class="p-3 text-center">Actions</th>
+              <th class="w-[8%] p-3 border-r border-gray-200">Date</th>
+              <th class="w-[16%] p-3 border-r border-gray-200">ID & Name</th>
+              <th class="w-[9%] p-3 border-r border-gray-200">Outlet</th>
+              <th class="w-[13%] p-3 border-r border-gray-200">Type</th>
+              <th class="w-[20%] p-3 border-r border-gray-200">Items Requested</th>
+              <th class="w-[8%] p-3 border-r border-gray-200">Total (₱)</th>
+              <th class="w-[20%] p-3 border-r border-gray-200 text-center">Status</th>
+              <th class="w-[8%] p-3 border-r border-gray-200">Finance Processing</th>
+              <th class="w-[8%] p-3 text-center">Actions</th>
             </tr>
           </thead>
           <tbody id="adminTableBody" class="text-sm"></tbody>
@@ -252,7 +254,7 @@
         </div>
         <div>
           <label class="text-[10px] font-bold text-black uppercase tracking-wider">Cost Tag</label>
-          <select id="filterCostTagFin" onchange="applyFiltersFinance()" class="w-full px-3 py-2 mt-2 border border-gray-300 rounded-sm"><option value="ALL">All Cost Tags</option><option value="PNL_EXPENSE">P&amp;L Expense</option><option value="PAYROLL_DEDUCT">Payroll Deduct</option><option value="ZERO_COST">Zero Cost</option></select>
+          <select id="filterCostTagFin" onchange="applyFiltersFinance()" class="w-full px-3 py-2 mt-2 border border-gray-300 rounded-sm"><option value="ALL">All Cost Tags</option><option value="PNL_EXPENSE">P&amp;L Expense</option><option value="PAYROLL_DEDUCT">ATD</option><option value="ZERO_COST">Zero Cost</option></select>
         </div>
         <div>
           <label class="text-[10px] font-bold text-black uppercase tracking-wider">Outlet</label>
@@ -387,6 +389,7 @@
   </div>
 
   <script>
+    // Change this URL anytime you want to swap the full-page background image.
     const GAS_API_URL = "https://script.google.com/macros/s/AKfycby0vzc8l2S4NZ9eKCdzxixOmsmvygJhy4WHvsMDynpDij2esh4Cf9-FK-JCvwP4-sjW7w/exec";
     
     let currentUser = null;
@@ -549,7 +552,7 @@
       if (!values || values.length === 0) {
         return `<span class="text-gray-400 text-xs italic">${emptyLabel}</span>`;
       }
-      return values.map(value => escapeHtml(value)).join('<br>');
+      return values.map(value => `<span class="block whitespace-nowrap">${escapeHtml(value)}</span>`).join('');
     }
 
     function switchTab(tabId) {
@@ -774,7 +777,7 @@
     function getFilterLabel(value) {
       const labels = {
         PNL_EXPENSE: 'P&L Expense',
-        PAYROLL_DEDUCT: 'Payroll Deduct',
+        PAYROLL_DEDUCT: 'ATD',
         ZERO_COST: 'Zero Cost',
         PENDING: 'Pending',
         RELEASED: 'Released',
@@ -1131,7 +1134,7 @@
     }
 
     function getCostBadge(category) {
-      if(category === 'ATD_PAYROLL') return `<span class="bg-gray-200 text-black px-2 py-1 rounded-sm text-[10px] font-bold uppercase tracking-wider">Payroll Deduct</span>`;
+      if(category === 'ATD_PAYROLL') return `<span class="bg-gray-200 text-black px-2 py-1 rounded-sm text-[10px] font-bold uppercase tracking-wider">ATD</span>`;
       if(category === 'FINAL_PAY_DEDUCTION') return `<span class="bg-gray-300 text-black px-2 py-1 rounded-sm text-[10px] font-bold uppercase tracking-wider">Final Pay Deduct</span>`;
       if(category === 'COMPANY_EXPENSE_PNL') return `<span class="bg-white border border-gray-300 text-black px-2 py-1 rounded-sm text-[10px] font-bold uppercase tracking-wider">P&L Expense</span>`;
       return `<span class="bg-gray-100 text-gray-500 px-2 py-1 rounded-sm text-[10px] font-bold uppercase tracking-wider">${category}</span>`;
@@ -1180,7 +1183,7 @@
         }
         const tr = document.createElement('tr');
         tr.className = "border-b border-gray-200 hover:bg-gray-50 transition";
-        tr.innerHTML = `<td class="p-4 text-[11px] text-gray-500">${formatDisplayDate(req.Timestamp)}</td> <td class="p-4 text-sm"><strong class="text-black">${escapeHtml(req.EmployeeID)}</strong><br><span class="text-xs text-gray-500 uppercase tracking-wider">${escapeHtml(req.EmployeeName)}</span></td> <td class="p-4 text-sm">${escapeHtml(req.Outlet)}</td> <td class="p-4 text-sm">${escapeHtml(req.RequestType)}</td> <td class="p-4 text-sm font-bold text-black leading-tight">${renderListLines(req.ItemsList, 'No items')}</td> <td class="p-4 text-sm font-bold text-black">₱${Number(req.TotalCost || 0).toLocaleString()}</td> <td class="p-4 text-center">${getStatusBadge(req.Status)}${buildAuditHtml(req)}</td> <td class="p-4 leading-tight text-xs">${renderListLines(req.FinanceTags, 'Unprocessed')}</td> <td class="p-4 text-center">${actionsHtml}</td>`;
+        tr.innerHTML = `<td class="w-[8%] p-4 text-[11px] text-gray-500">${formatDisplayDate(req.Timestamp)}</td> <td class="w-[16%] p-4 text-sm"><strong class="text-black">${escapeHtml(req.EmployeeID)}</strong><br><span class="text-xs text-gray-500 uppercase tracking-wider">${escapeHtml(req.EmployeeName)}</span></td> <td class="w-[9%] p-4 text-sm">${escapeHtml(req.Outlet)}</td> <td class="w-[13%] p-4 text-sm">${escapeHtml(req.RequestType)}</td> <td class="w-[20%] p-4 text-sm font-bold text-black leading-tight">${renderListLines(req.ItemsList, 'No items')}</td> <td class="w-[8%] p-4 text-sm font-bold text-black">₱${Number(req.TotalCost || 0).toLocaleString()}</td> <td class="w-[12%] p-4 text-center">${getStatusBadge(req.Status)}${buildAuditHtml(req)}</td> <td class="w-[4%] p-3 leading-tight text-xs text-gray-400 italic">${renderListLines(req.FinanceTags, 'Unprocessed')}</td> <td class="w-[8%] p-4 text-center">${actionsHtml}</td>`;
         tbody.appendChild(tr);
       });
     }
