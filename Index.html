@@ -186,6 +186,7 @@
               <th class="p-3 border-r border-gray-200">Date</th>
               <th class="p-3 border-r border-gray-200">ID & Name</th>
               <th class="p-3 border-r border-gray-200">Outlet</th>
+              <th class="p-3 border-r border-gray-200">Type</th>
               <th class="p-3 border-r border-gray-200">Items Requested</th>
               <th class="p-3 border-r border-gray-200">Total (₱)</th>
               <th class="p-3 border-r border-gray-200 text-center">Status</th>
@@ -209,16 +210,8 @@
         <p class="mt-4 text-center text-[10px] font-bold uppercase tracking-widest text-gray-500">Chart follows the filters below.</p>
       </div>
 
-      <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6 bg-gray-50 p-5 rounded-sm border border-gray-200">
-        <div>
-          <label class="text-[10px] font-bold text-black uppercase tracking-wider">From</label>
-          <input type="date" id="filterDateFromInv" onchange="applyFiltersInventory()" class="w-full px-3 py-2 mt-1 border border-gray-300 rounded-sm">
-        </div>
-        <div>
-          <label class="text-[10px] font-bold text-black uppercase tracking-wider">To</label>
-          <input type="date" id="filterDateToInv" onchange="applyFiltersInventory()" class="w-full px-3 py-2 mt-1 border border-gray-300 rounded-sm">
-        </div>
-        <div>
+      <div class="mb-6 bg-gray-50 p-5 rounded-sm border border-gray-200">
+        <div class="max-w-xs">
           <label class="text-[10px] font-bold text-black uppercase tracking-wider">Status</label>
           <select id="filterInventoryStatus" onchange="applyFiltersInventory()" class="w-full px-3 py-2 mt-1 border border-gray-300 rounded-sm"><option value="ALL">All Items</option><option value="LOW">Low Stock</option><option value="OPTIMAL">Optimal Stock</option></select>
         </div>
@@ -826,9 +819,7 @@
 
     function collectInventoryFilters() {
       return {
-        status: document.getElementById('filterInventoryStatus')?.value || 'ALL',
-        dateFrom: document.getElementById('filterDateFromInv')?.value || '',
-        dateTo: document.getElementById('filterDateToInv')?.value || ''
+        status: document.getElementById('filterInventoryStatus')?.value || 'ALL'
       };
     }
 
@@ -864,7 +855,7 @@
 
       if (res.success) {
         document.getElementById('searchDb').value = ''; 
-        fetchDashboardData();
+        await refreshManagedViews();
       } else {
         alert("Error: " + res.message);
       }
@@ -928,7 +919,7 @@
       btn.innerText = "ADD STOCK"; btn.disabled = false;
       if (res.success) {
         closeRestockModal(); 
-        fetchDashboardData();
+        await applyFiltersInventory();
       } else {
         statusMsg.innerText = res.message.toUpperCase(); 
         statusMsg.className = "text-gray-600 font-bold italic";
@@ -958,7 +949,7 @@
       if (res.success) {
         document.getElementById('searchFin').value = ''; 
         closeFinanceModal(); 
-        fetchDashboardData();
+        await applyFiltersFinance();
       } else {
         statusMsg.innerText = res.message.toUpperCase(); 
         statusMsg.className = "text-gray-600 font-bold italic";
@@ -1175,7 +1166,7 @@
     function renderAdminTable(requests) {
       const tbody = document.getElementById('adminTableBody');
       tbody.innerHTML = '';
-      if(requests.length === 0) { tbody.innerHTML = `<tr><td colspan="8" class="p-6 text-center text-gray-400 uppercase tracking-widest text-xs font-bold">No requests found.</td></tr>`; return; }
+      if(requests.length === 0) { tbody.innerHTML = `<tr><td colspan="9" class="p-6 text-center text-gray-400 uppercase tracking-widest text-xs font-bold">No requests found.</td></tr>`; return; }
       requests.forEach(req => {
         let actionsHtml = '';
         if (currentUser.role === 'HR' || currentUser.role === 'SUPER_ADMIN') {
@@ -1189,7 +1180,7 @@
         }
         const tr = document.createElement('tr');
         tr.className = "border-b border-gray-200 hover:bg-gray-50 transition";
-        tr.innerHTML = `<td class="p-4 text-[11px] text-gray-500">${formatDisplayDate(req.Timestamp)}</td> <td class="p-4 text-sm"><strong class="text-black">${escapeHtml(req.EmployeeID)}</strong><br><span class="text-xs text-gray-500 uppercase tracking-wider">${escapeHtml(req.EmployeeName)}</span></td> <td class="p-4 text-sm">${escapeHtml(req.Outlet)}</td> <td class="p-4 text-sm font-bold text-black leading-tight">${renderListLines(req.ItemsList, 'No items')}</td> <td class="p-4 text-sm font-bold text-black">₱${Number(req.TotalCost || 0).toLocaleString()}</td> <td class="p-4 text-center">${getStatusBadge(req.Status)}${buildAuditHtml(req)}</td> <td class="p-4 leading-tight text-xs">${renderListLines(req.FinanceTags, 'Unprocessed')}</td> <td class="p-4 text-center">${actionsHtml}</td>`;
+        tr.innerHTML = `<td class="p-4 text-[11px] text-gray-500">${formatDisplayDate(req.Timestamp)}</td> <td class="p-4 text-sm"><strong class="text-black">${escapeHtml(req.EmployeeID)}</strong><br><span class="text-xs text-gray-500 uppercase tracking-wider">${escapeHtml(req.EmployeeName)}</span></td> <td class="p-4 text-sm">${escapeHtml(req.Outlet)}</td> <td class="p-4 text-sm">${escapeHtml(req.RequestType)}</td> <td class="p-4 text-sm font-bold text-black leading-tight">${renderListLines(req.ItemsList, 'No items')}</td> <td class="p-4 text-sm font-bold text-black">₱${Number(req.TotalCost || 0).toLocaleString()}</td> <td class="p-4 text-center">${getStatusBadge(req.Status)}${buildAuditHtml(req)}</td> <td class="p-4 leading-tight text-xs">${renderListLines(req.FinanceTags, 'Unprocessed')}</td> <td class="p-4 text-center">${actionsHtml}</td>`;
         tbody.appendChild(tr);
       });
     }
@@ -1224,8 +1215,9 @@
         let rowClass = "border-b border-gray-200 hover:bg-gray-50 transition";
         
         if (item.DerivedStatus === 'LOW') {
-          statusBadge = `<span class="bg-black text-white px-3 py-1 rounded-sm text-[10px] font-bold uppercase tracking-widest animate-pulse">LOW STOCK</span>`;
+          statusBadge = `<span class="bg-red-600 text-white px-3 py-1 rounded-sm text-[10px] font-bold uppercase tracking-widest animate-pulse">LOW STOCK</span>`;
           rowClass = "border-b border-gray-200 bg-gray-100";
+
         } else if (item.AVAILABLE_STOCK > item.BASE_STOCK && item.BASE_STOCK > 0) {
           statusBadge = `<span class="bg-white border border-black text-black px-3 py-1 rounded-sm text-[10px] font-bold uppercase tracking-widest">OVERSTOCK</span>`;
         }
