@@ -6,6 +6,106 @@
   <title>Abaca Uniform Management</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <style>
+    @media (max-width: 767px) {
+      #dashboardScreen {
+        padding: 0.75rem;
+      }
+
+      #dashboardScreen > .sticky {
+        margin-left: -0.75rem;
+        margin-right: -0.75rem;
+        padding: 0.75rem 0.75rem 0.5rem;
+        margin-bottom: 1rem;
+      }
+
+      #tabNavigation {
+        overflow-x: auto;
+        white-space: nowrap;
+        gap: 0.5rem;
+        scrollbar-width: none;
+      }
+
+      #tabNavigation::-webkit-scrollbar {
+        display: none;
+      }
+
+      #tabNavigation button {
+        flex: 0 0 auto;
+        padding: 0.75rem 0.35rem;
+        font-size: 0.7rem;
+        letter-spacing: 0.08em;
+      }
+
+      #dashboardScreen section,
+      #dashboardScreen > div[id^="section-"] {
+        padding: 1rem;
+      }
+
+      .mobile-stack-table thead {
+        display: none;
+      }
+
+      .mobile-stack-table,
+      .mobile-stack-table tbody,
+      .mobile-stack-table tr,
+      .mobile-stack-table td {
+        display: block;
+        width: 100% !important;
+      }
+
+      .mobile-stack-table tr {
+        border: 1px solid #e5e7eb;
+        border-radius: 0.125rem;
+        background: #ffffff;
+        padding: 0.25rem 0;
+        margin-bottom: 0.9rem;
+        box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
+      }
+
+      .mobile-stack-table td {
+        border: 0 !important;
+        padding: 0.55rem 0.85rem !important;
+        text-align: left !important;
+      }
+
+      .mobile-stack-table td::before {
+        content: attr(data-label);
+        display: block;
+        margin-bottom: 0.3rem;
+        font-size: 0.65rem;
+        font-weight: 700;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+        color: #6b7280;
+      }
+
+      .mobile-stack-table td[data-label="Actions"],
+      .mobile-stack-table td[data-label="Action"] {
+        padding-top: 0.8rem !important;
+      }
+
+      .mobile-stack-table td[data-label="Status"] > span:first-child,
+      .mobile-stack-table td[data-label="Cost Tag"] > span:first-child {
+        display: inline-flex;
+      }
+
+      .mobile-stack-table td[data-label="Items Requested"] span.block {
+        white-space: normal;
+      }
+
+      #itemsContainer .item-row,
+      #editItemsContainer .item-row {
+        flex-direction: column;
+        align-items: stretch;
+      }
+
+      #itemsContainer .req-item-qty,
+      #editItemsContainer .req-item-qty {
+        width: 100%;
+      }
+    }
+  </style>
 </head>
 <body class="bg-gray-50 text-gray-900 font-sans min-h-screen relative overflow-x-hidden">
 
@@ -28,17 +128,17 @@
     </div>
   </div>
 
-  <div id="dashboardScreen" class="hidden max-w-8xl mx-auto p-6">
+  <div id="dashboardScreen" class="hidden max-w-[96rem] mx-auto p-6">
     <div class="sticky top-0 z-30 -mx-6 px-6 pt-6 pb-4 mb-8 bg-gray-50/95 backdrop-blur-sm">
-      <div class="bg-black rounded-sm shadow-sm p-6 mb-4 flex flex-col md:flex-row justify-between items-center border border-gray-800">
-        <div class="mb-4 md:mb-0">
-          <h1 class="text-2xl font-bold text-white">Welcome, <span id="uiName" class="text-gray-200 font-medium"></span></h1>
+      <div class="bg-black rounded-sm shadow-sm p-4 md:p-6 mb-4 flex flex-col md:flex-row justify-between items-start md:items-center gap-4 border border-gray-800">
+        <div class="w-full md:w-auto">
+          <h1 class="text-xl md:text-2xl font-bold text-white leading-tight">Welcome, <span id="uiName" class="text-gray-200 font-medium break-words"></span></h1>
           <p class="text-gray-300 mt-2 text-sm">
             <span class="font-bold bg-white text-black px-2 py-1 rounded-sm mr-2" id="uiRole"></span>
-            Dept: <span id="uiDept" class="font-medium text-white"></span> | Outlet: <span id="uiOutlet" class="font-medium text-white"></span>
+            <span class="block md:inline mt-2 md:mt-0">Dept: <span id="uiDept" class="font-medium text-white"></span> | Outlet: <span id="uiOutlet" class="font-medium text-white"></span></span>
           </p>
         </div>
-        <button onclick="logout()" class="bg-gray-200 hover:bg-gray-300 border border-gray-300 text-black px-6 py-2 rounded-sm font-bold transition text-sm uppercase tracking-wider">Log Out</button>
+        <button onclick="logout()" class="w-full md:w-auto bg-gray-200 hover:bg-gray-300 border border-gray-300 text-black px-6 py-2 rounded-sm font-bold transition text-sm uppercase tracking-wider">Log Out</button>
       </div>
 
       <div id="tabNavigation" class="flex space-x-4 border-b border-gray-300 px-2 hidden bg-transparent">
@@ -112,7 +212,7 @@
         </label>
       </div>
 
-      <div class="mt-10 flex items-center space-x-6">
+      <div class="mt-10 flex flex-col sm:flex-row items-start sm:items-center gap-4 sm:gap-6">
         <button id="submitReqBtn" onclick="processRequest()" class="bg-black hover:bg-gray-800 text-white font-bold py-3 px-8 rounded-sm transition uppercase text-sm tracking-wider">Submit Request</button>
         <span id="reqStatusMsg" class="font-bold text-sm italic"></span>
       </div>
@@ -121,7 +221,7 @@
     <div id="section-history" class="bg-white rounded-sm shadow-sm p-6 border border-gray-200 hidden">
       <h2 class="text-lg font-bold text-black mb-6 border-b border-gray-200 pb-3 uppercase tracking-wider">My Personal Request History</h2>
       <div class="overflow-x-auto">
-        <table class="w-full text-left border-collapse">
+        <table class="mobile-stack-table w-full text-left border-collapse">
           <thead>
             <tr class="bg-gray-100 text-black uppercase text-[10px] tracking-wider border-b border-gray-300">
               <th class="p-3 border-r border-gray-200">Date</th>
@@ -182,7 +282,7 @@
       </div>
 
       <div class="overflow-x-auto">
-        <table class="w-full text-left border-collapse">
+        <table class="mobile-stack-table w-full text-left border-collapse">
           <thead>
             <tr class="bg-gray-100 text-black uppercase text-[10px] tracking-wider border-b border-gray-300">
               <th class="w-[8%] p-3 border-r border-gray-200">Date</th>
@@ -220,7 +320,7 @@
       </div>
 
       <div class="overflow-x-auto">
-        <table class="w-full text-left border-collapse">
+        <table class="mobile-stack-table w-full text-left border-collapse">
           <thead>
             <tr class="bg-black text-white uppercase text-[10px] tracking-wider">
               <th class="p-3 border-r border-gray-700">Uniform Item</th>
@@ -281,7 +381,7 @@
       </div>
 
       <div class="overflow-x-auto">
-        <table class="w-full text-left border-collapse">
+        <table class="mobile-stack-table w-full text-left border-collapse">
           <thead>
             <tr class="bg-gray-100 text-black uppercase text-[10px] tracking-wider border-b border-gray-300">
               <th class="p-3 border-r border-gray-200">Date</th>
@@ -301,7 +401,7 @@
   </div>
 
   <div id="editModal" class="fixed inset-0 bg-gray-900 bg-opacity-75 hidden flex items-center justify-center z-50">
-    <div class="bg-white p-8 rounded-sm shadow-2xl w-full max-w-3xl max-h-[90vh] overflow-y-auto">
+    <div class="bg-white p-5 md:p-8 rounded-sm shadow-2xl w-full max-w-3xl max-h-[90vh] overflow-y-auto">
       <div class="flex justify-between items-center mb-6 border-b border-gray-200 pb-3">
         <h2 class="text-xl font-bold text-black uppercase tracking-wider">Edit Request: <span id="editReqIdLabel" class="text-gray-500 text-sm font-normal ml-2"></span></h2>
         <button onclick="closeEditModal()" class="text-gray-400 hover:text-black text-2xl font-bold transition">&times;</button>
@@ -335,8 +435,8 @@
           <span class="text-black font-bold text-sm">Payroll/Final Pay Deduction Consent Verified</span>
         </label>
       </div>
-      <div class="mt-8 flex justify-end space-x-4 border-t border-gray-200 pt-6">
-        <span id="editStatusMsg" class="font-bold text-sm italic self-center mr-4"></span>
+      <div class="mt-8 flex flex-col sm:flex-row justify-end items-stretch sm:items-center gap-3 sm:gap-4 border-t border-gray-200 pt-6">
+        <span id="editStatusMsg" class="font-bold text-sm italic self-start sm:self-center sm:mr-4"></span>
         <button onclick="closeEditModal()" class="px-6 py-2 bg-white border border-gray-300 hover:bg-gray-100 text-black font-bold rounded-sm transition text-xs uppercase tracking-wider">Cancel</button>
         <button id="saveEditBtn" onclick="saveEditedRequest()" class="px-6 py-2 bg-black hover:bg-gray-800 text-white font-bold rounded-sm transition shadow-sm text-xs uppercase tracking-wider">Save Changes</button>
       </div>
@@ -344,7 +444,7 @@
   </div>
 
   <div id="financeModal" class="fixed inset-0 bg-gray-900 bg-opacity-75 hidden flex items-center justify-center z-50">
-    <div class="bg-white p-8 rounded-sm shadow-2xl w-full max-w-md">
+    <div class="bg-white p-5 md:p-8 rounded-sm shadow-2xl w-full max-w-md">
       <div class="flex justify-between items-center mb-6 border-b border-gray-200 pb-3">
         <h2 class="text-xl font-bold text-black uppercase tracking-wider">Tag Deduction / Expense</h2>
         <button onclick="closeFinanceModal()" class="text-gray-400 hover:text-black text-2xl font-bold transition">&times;</button>
@@ -358,8 +458,8 @@
         <label class="block text-black text-xs font-bold uppercase tracking-wider mb-2">Remarks (Optional)</label>
         <input type="text" id="finRemarks" placeholder="e.g. 50% deducted" class="w-full px-4 py-2 border border-gray-300 rounded-sm focus:ring-1 focus:ring-black focus:border-black outline-none">
       </div>
-      <div class="flex justify-end space-x-4 border-t border-gray-200 pt-6">
-        <span id="finStatusMsg" class="font-bold text-sm italic self-center mr-4"></span>
+      <div class="flex flex-col sm:flex-row justify-end items-stretch sm:items-center gap-3 sm:gap-4 border-t border-gray-200 pt-6">
+        <span id="finStatusMsg" class="font-bold text-sm italic self-start sm:self-center sm:mr-4"></span>
         <button onclick="closeFinanceModal()" class="px-6 py-2 bg-white border border-gray-300 hover:bg-gray-100 text-black font-bold rounded-sm transition text-xs uppercase tracking-wider">Cancel</button>
         <button id="saveFinBtn" onclick="submitFinanceTag()" class="px-6 py-2 bg-black hover:bg-gray-800 text-white font-bold rounded-sm transition shadow-sm text-xs uppercase tracking-wider">Add Tag</button>
       </div>
@@ -367,7 +467,7 @@
   </div>
 
   <div id="restockModal" class="fixed inset-0 bg-gray-900 bg-opacity-75 hidden flex items-center justify-center z-50">
-    <div class="bg-white p-8 rounded-sm shadow-2xl w-full max-w-md">
+    <div class="bg-white p-5 md:p-8 rounded-sm shadow-2xl w-full max-w-md">
       <div class="flex justify-between items-center mb-6 border-b border-gray-200 pb-3">
         <h2 class="text-xl font-bold text-black uppercase tracking-wider">Restock Inventory</h2>
         <button onclick="closeRestockModal()" class="text-gray-400 hover:text-black text-2xl font-bold transition">&times;</button>
@@ -380,8 +480,8 @@
         <input type="number" id="restockQty" min="1" placeholder="e.g. 50" class="w-full px-4 py-2 border border-gray-300 rounded-sm focus:ring-1 focus:ring-black focus:border-black outline-none text-center text-lg font-bold">
       </div>
       
-      <div class="flex justify-end space-x-4 border-t border-gray-200 pt-6">
-        <span id="restockStatusMsg" class="font-bold text-sm italic self-center mr-4"></span>
+      <div class="flex flex-col sm:flex-row justify-end items-stretch sm:items-center gap-3 sm:gap-4 border-t border-gray-200 pt-6">
+        <span id="restockStatusMsg" class="font-bold text-sm italic self-start sm:self-center sm:mr-4"></span>
         <button onclick="closeRestockModal()" class="px-6 py-2 bg-white border border-gray-300 hover:bg-gray-100 text-black font-bold rounded-sm transition text-xs uppercase tracking-wider">Cancel</button>
         <button id="saveRestockBtn" onclick="submitRestock()" class="px-6 py-2 bg-black hover:bg-gray-800 text-white font-bold rounded-sm transition shadow-sm text-xs uppercase tracking-wider">Add Stock</button>
       </div>
@@ -1161,7 +1261,7 @@
       requests.forEach(req => {
         const tr = document.createElement('tr');
         tr.className = "border-b border-gray-200 hover:bg-gray-50 transition";
-        tr.innerHTML = `<td class="p-4 text-xs text-gray-500">${formatDisplayDate(req.Timestamp)}</td> <td class="p-4 text-sm">${escapeHtml(req.RequestType)}</td> <td class="p-4 text-sm font-bold text-black leading-tight">${renderListLines(req.ItemsList, 'No items')}</td> <td class="p-4">${getCostBadge(req.CostCategory)}</td> <td class="p-4 text-sm font-bold text-black">₱${Number(req.TotalCost || 0).toLocaleString()}</td> <td class="p-4">${getStatusBadge(req.Status)}${buildAuditHtml(req)}</td>`;
+        tr.innerHTML = `<td data-label="Date" class="p-4 text-xs text-gray-500">${formatDisplayDate(req.Timestamp)}</td> <td data-label="Type" class="p-4 text-sm">${escapeHtml(req.RequestType)}</td> <td data-label="Items Requested" class="p-4 text-sm font-bold text-black leading-tight">${renderListLines(req.ItemsList, 'No items')}</td> <td data-label="Cost Tag" class="p-4">${getCostBadge(req.CostCategory)}</td> <td data-label="Total" class="p-4 text-sm font-bold text-black">₱${Number(req.TotalCost || 0).toLocaleString()}</td> <td data-label="Status" class="p-4">${getStatusBadge(req.Status)}${buildAuditHtml(req)}</td>`;
         tbody.appendChild(tr);
       });
     }
@@ -1183,7 +1283,7 @@
         }
         const tr = document.createElement('tr');
         tr.className = "border-b border-gray-200 hover:bg-gray-50 transition";
-        tr.innerHTML = `<td class="w-[8%] p-4 text-[11px] text-gray-500">${formatDisplayDate(req.Timestamp)}</td> <td class="w-[16%] p-4 text-sm"><strong class="text-black">${escapeHtml(req.EmployeeID)}</strong><br><span class="text-xs text-gray-500 uppercase tracking-wider">${escapeHtml(req.EmployeeName)}</span></td> <td class="w-[9%] p-4 text-sm">${escapeHtml(req.Outlet)}</td> <td class="w-[13%] p-4 text-sm">${escapeHtml(req.RequestType)}</td> <td class="w-[20%] p-4 text-sm font-bold text-black leading-tight">${renderListLines(req.ItemsList, 'No items')}</td> <td class="w-[8%] p-4 text-sm font-bold text-black">₱${Number(req.TotalCost || 0).toLocaleString()}</td> <td class="w-[12%] p-4 text-center">${getStatusBadge(req.Status)}${buildAuditHtml(req)}</td> <td class="w-[4%] p-3 leading-tight text-xs text-gray-400 italic">${renderListLines(req.FinanceTags, 'Unprocessed')}</td> <td class="w-[8%] p-4 text-center">${actionsHtml}</td>`;
+        tr.innerHTML = `<td data-label="Date" class="w-[8%] p-4 text-[11px] text-gray-500">${formatDisplayDate(req.Timestamp)}</td> <td data-label="ID & Name" class="w-[16%] p-4 text-sm"><strong class="text-black">${escapeHtml(req.EmployeeID)}</strong><br><span class="text-xs text-gray-500 uppercase tracking-wider">${escapeHtml(req.EmployeeName)}</span></td> <td data-label="Outlet" class="w-[9%] p-4 text-sm">${escapeHtml(req.Outlet)}</td> <td data-label="Type" class="w-[13%] p-4 text-sm">${escapeHtml(req.RequestType)}</td> <td data-label="Items Requested" class="w-[20%] p-4 text-sm font-bold text-black leading-tight">${renderListLines(req.ItemsList, 'No items')}</td> <td data-label="Total" class="w-[8%] p-4 text-sm font-bold text-black">₱${Number(req.TotalCost || 0).toLocaleString()}</td> <td data-label="Status" class="w-[12%] p-4 text-center">${getStatusBadge(req.Status)}${buildAuditHtml(req)}</td> <td data-label="Finance Processing" class="w-[4%] p-3 leading-tight text-xs text-gray-400 italic">${renderListLines(req.FinanceTags, 'Unprocessed')}</td> <td data-label="Actions" class="w-[8%] p-4 text-center">${actionsHtml}</td>`;
         tbody.appendChild(tr);
       });
     }
@@ -1201,7 +1301,7 @@
         }
         const tr = document.createElement('tr');
         tr.className = "border-b border-gray-200 hover:bg-gray-50 transition";
-        tr.innerHTML = `<td class="p-4 text-[11px] text-gray-500">${formatDisplayDate(req.Timestamp)}</td> <td class="p-4 text-sm"><strong class="text-black">${escapeHtml(req.EmployeeID)}</strong><br><span class="text-xs text-gray-500 uppercase tracking-wider">${escapeHtml(req.EmployeeName)}</span></td> <td class="p-4 text-sm font-bold text-black leading-tight">${renderListLines(req.ItemsList, 'No items')}</td> <td class="p-4">${getCostBadge(req.CostCategory)}</td> <td class="p-4 text-sm font-bold text-black">₱${Number(req.TotalCost || 0).toLocaleString()}</td> <td class="p-4 text-center">${getStatusBadge(req.Status)}${buildAuditHtml(req)}</td> <td class="p-4 leading-tight text-xs">${renderListLines(req.FinanceTags, 'Unprocessed')}</td> <td class="p-4 text-center">${actionBtn}</td>`;
+        tr.innerHTML = `<td data-label="Date" class="p-4 text-[11px] text-gray-500">${formatDisplayDate(req.Timestamp)}</td> <td data-label="ID & Name" class="p-4 text-sm"><strong class="text-black">${escapeHtml(req.EmployeeID)}</strong><br><span class="text-xs text-gray-500 uppercase tracking-wider">${escapeHtml(req.EmployeeName)}</span></td> <td data-label="Items Requested" class="p-4 text-sm font-bold text-black leading-tight">${renderListLines(req.ItemsList, 'No items')}</td> <td data-label="Cost Tag" class="p-4">${getCostBadge(req.CostCategory)}</td> <td data-label="Total" class="p-4 text-sm font-bold text-black">₱${Number(req.TotalCost || 0).toLocaleString()}</td> <td data-label="Status" class="p-4 text-center">${getStatusBadge(req.Status)}${buildAuditHtml(req)}</td> <td data-label="Finance Tags" class="p-4 leading-tight text-xs">${renderListLines(req.FinanceTags, 'Unprocessed')}</td> <td data-label="Action" class="p-4 text-center">${actionBtn}</td>`;
         tbody.appendChild(tr);
       });
     }
@@ -1228,12 +1328,12 @@
         const tr = document.createElement('tr');
         tr.className = rowClass;
         tr.innerHTML = `
-          <td class="p-4 text-sm font-bold text-black">${item.UNIFORM}</td>
-          <td class="p-4 text-sm text-center text-gray-500">${item.BASE_STOCK}</td>
-          <td class="p-4 text-sm text-center font-bold text-gray-600">${item.PENDING_QTY}</td>
-          <td class="p-4 text-xl text-center font-bold text-black">${item.AVAILABLE_STOCK}</td>
-          <td class="p-4 text-center">${statusBadge}</td>
-          <td class="p-4 text-center">
+          <td data-label="Uniform Item" class="p-4 text-sm font-bold text-black">${item.UNIFORM}</td>
+          <td data-label="Base Target Stock" class="p-4 text-sm text-center text-gray-500">${item.BASE_STOCK}</td>
+          <td data-label="Pending Release" class="p-4 text-sm text-center font-bold text-gray-600">${item.PENDING_QTY}</td>
+          <td data-label="On-Hand Stock" class="p-4 text-xl text-center font-bold text-black">${item.AVAILABLE_STOCK}</td>
+          <td data-label="Status" class="p-4 text-center">${statusBadge}</td>
+          <td data-label="Action" class="p-4 text-center">
             <button onclick="openRestockModal('${item.UNIFORM}')" class="px-3 py-1 bg-white border border-gray-300 text-black hover:bg-gray-100 font-bold rounded-sm text-[10px] transition uppercase tracking-wider">RESTOCK</button>
           </td>
         `;
